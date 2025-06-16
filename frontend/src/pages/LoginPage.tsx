@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, Button, TextField, Typography, Alert } from '@mui/material';
-import axios from 'axios';
+import { api } from '../api/apiClient';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -13,15 +13,23 @@ export default function LoginPage() {
     e.preventDefault();
     setError('');
     try {
-      const res = await axios.post('/api/users/login/', { email, password });
-      localStorage.setItem('token', res.data.token);
+      const data = await api.post<{ token: string }>('/users/login/', { email, password });
+      localStorage.setItem('token', data.token);
       navigate('/books');
-    } catch (error) {
+    } catch (error: any) {
       let errorMessage = 'Login failed';
-      if (axios.isAxiosError(error)) {
-        errorMessage = error.response?.data?.message || error.message || errorMessage;
-      } else if (error instanceof Error) {
-        errorMessage = error.message;
+      if (error.response) {
+        errorMessage = error.response.data?.message || 
+                     error.response.data?.detail || 
+                     error.response.statusText || 
+                     'Request failed';
+        console.error('Response error:', error.response.data);
+      } else if (error.request) {
+        errorMessage = 'No response from server. Please try again.';
+        console.error('No response:', error.request);
+      } else {
+        errorMessage = error.message || 'Request setup failed';
+        console.error('Request error:', error.message);
       }
       setError(errorMessage);
     }
