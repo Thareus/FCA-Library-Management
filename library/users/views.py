@@ -1,0 +1,125 @@
+from rest_framework import serializers, viewsets, status, permissions
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.authtoken.models import Token
+from rest_framework.authtoken.views import ObtainAuthToken
+from rest_framework.permissions import IsAuthenticated
+from rest_framework import generics
+
+from .models import CustomUser, UserWishlist, UserNotification
+from .serializers import (
+    UserSerializer,
+    UserProfileSerializer, 
+    UserRegistrationSerializer,
+    CustomTokenSerializer,
+    UserWishlistSerializer,
+    UserNotificationSerializer
+)
+
+class UserRegistrationView(generics.CreateAPIView):
+    """
+    Register a new user.
+    """
+    queryset = CustomUser.objects.all()
+    serializer_class = UserRegistrationSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        
+        # Create token for the new user
+        token, created = Token.objects.get_or_create(user=user)
+        
+        return Response(
+            {
+                'user': UserSerializer(user, context=self.get_serializer_context()).data,
+                'token': token.key
+            },
+            status=status.HTTP_201_CREATED
+        )
+
+
+class CustomAuthToken(ObtainAuthToken):
+    """
+    Custom token-based authentication view that extends ObtainAuthToken.
+    Returns user data along with the token.
+    """
+    serializer_class = CustomTokenSerializer
+    
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(
+            data=request.data,
+            context={'request': request}
+        )
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data['user']
+        token, created = Token.objects.get_or_create(user=user)
+        
+        return Response({
+            'token': token.key,
+            'user': UserSerializer(user).data
+        })
+
+
+class LogoutView(APIView):
+    """
+    Logout a user by deleting their auth token.
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        # Delete the user's token to force logout
+        request.user.auth_token.delete()
+        return Response(
+            {"detail": "Successfully logged out."},
+            status=status.HTTP_200_OK
+        )
+
+
+class CurrentUserView(APIView):
+    """
+    Get the current authenticated user's information.
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, *args, **kwargs):
+        serializer = UserSerializer(request.user, context={'request': request})
+        return Response(serializer.data)
+
+
+class UserProfileView(generics.RetrieveUpdateAPIView):
+    """
+    Retrieve or update user profile.
+    """
+    serializer_class = UserProfileSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_object(self):
+        user = CustomUser.objects.prefetch_related('wishlist', 'notifications').get(username=self.request.user.username)
+        
+        return user
+
+class UserWishlistViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint for managing user wishlists.
+    """
+    serializer_class = UserWishlistSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        return UserWishlist.objects.filter(user=self.request.user)
+    
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+class UserNotificationViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    API endpoint for viewing book notifications.
+    """
+    serializer_class = UserNotificationSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        return UserNotification.objects.filter(user=self.request.user)
