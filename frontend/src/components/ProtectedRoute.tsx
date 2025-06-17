@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { api, clearAuthToken } from '../api/apiClient';
+import { API_PATHS } from '../utils/apiPaths';
 
 export const ProtectedRoute = ({ children, requireStaff = false }: { 
   children: React.ReactNode;
@@ -21,7 +22,7 @@ export const ProtectedRoute = ({ children, requireStaff = false }: {
       }
 
       try {
-        const response = await api.get('/users/me/');
+        const response = await api.get(API_PATHS.CURRENT_USER);
 
         setIsAuthenticated(true);
         setIsStaff(response.is_staff || false);

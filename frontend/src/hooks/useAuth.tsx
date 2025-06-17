@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api, clearAuthToken } from '../api/apiClient';
+import { API_PATHS } from '../utils/apiPaths';
 
 export const useAuth = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -20,7 +21,7 @@ export const useAuth = () => {
       }
 
       try {
-        const response = await api.get('/users/me/');
+        const response = await api.get(API_PATHS.CURRENT_USER);
         
         setIsAuthenticated(true);
         setIsStaff(response.is_staff || false);
