@@ -42,18 +42,21 @@ export default function BookDetailPage() {
 
   return (
     <Box>
-      <Typography variant="h4" mb={2}>{book.title}</Typography>
-      <Typography variant="subtitle1">{book.authors ? book.authors.join(', ') : book.author}</Typography>
-      <Typography variant="body1">ISBN: {book.isbn}</Typography>
-      <Typography variant="body1">Publisher: {book.publisher}</Typography>
-      <Typography variant="body1">Year: {book.publication_year}</Typography>
-      <Typography variant="body1">Language: {book.language}</Typography>
-      <Typography variant="body1">Available Copies: {book.available_copies}</Typography>
-      <Typography variant="body1">{book.is_available ? 'Available' : 'Not Available'}</Typography>
-      <Button variant="contained" color="primary" sx={{ mt: 2 }} onClick={handleBorrow} disabled={!book.is_available}>
-        Borrow
-      </Button>
-      {borrowMsg && <Alert sx={{ mt: 2 }} severity={borrowMsg.includes('success') ? 'success' : 'error'}>{borrowMsg}</Alert>}
+      {book && (
+        <>
+        <Typography variant="h4" mb={2}>{book.title}</Typography>
+        <Typography variant="subtitle1">{book.authors ? book.authors.join(', ') : book.authors}</Typography>
+        <Typography variant="body1">ISBN: {book.isbn}</Typography>
+        <Typography variant="body1">Year: {book.publication_year}</Typography>
+        <Typography variant="body1">Language: {book.language}</Typography>
+        <Typography variant="body1">Available Copies: {book.available_copies}</Typography>
+        <Typography variant="body1">{book.total_copies - book.available_copies > 0 ? 'Available' : 'Not Available'}</Typography>
+        <Button variant="contained" color="primary" sx={{ mt: 2 }} onClick={handleBorrow} disabled={book.total_copies - book.available_copies <= 0}>
+          Borrow
+        </Button>
+        {borrowMsg && <Alert sx={{ mt: 2 }} severity={borrowMsg.includes('success') ? 'success' : 'error'}>{borrowMsg}</Alert>}
+        </>
+      )}
     </Box>
   );
 }

@@ -96,7 +96,7 @@ export default function BookListPage() {
                   <Typography variant="body2">{book.authors ? book.authors.join(', ') : book.authors}</Typography>
                   <Typography variant="body2">ISBN: {book.isbn}</Typography>
                   <Typography variant="body2">Total Copies: {book.total_copies}</Typography>
-                  <Typography variant="body2">Available Copies: {book.available_copies}</Typography>
+                  <Typography variant="body2">Available Copies: {book.available_copies ? book.available_copies : 'N/A'}</Typography>
                 </CardContent>
                 <CardActions>
                   <Button component={Link} to={`/books/${book.id}`} size="small">Details</Button>
