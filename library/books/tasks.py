@@ -6,7 +6,6 @@ from django.db import transaction
 from django.core.files.storage import default_storage
 from django.core.mail import send_mail
 from django.conf import settings
-from rest_framework import serializers
 from .serializers import BookImportSerializer
 
 logger = logging.getLogger(__name__)
@@ -58,7 +57,7 @@ def process_csv_task(self, file_path, user_email=None):
                     "publication year": "publication_year",
                 }, inplace=True, errors='ignore')  # Ignore if columns don't exist
                 
-                # Preprocess: strip whitespace, drop NA, standardize
+                # Preprocess - drop rows with missing data
                 initial_count = len(df)
                 df = df.dropna(subset=["isbn", "title"])
                 if len(df) < initial_count:
@@ -69,7 +68,8 @@ def process_csv_task(self, file_path, user_email=None):
                     })
                 
                 # Clean and standardize data
-                df["isbn"] = df["isbn"].astype(str).str.strip()
+                df["library_id"] = df["library_id"].astype(str).str.strip().str.zfill(10)
+                df["isbn"] = df["isbn"].astype(str).str.strip().str.zfill(13)
                 df["language"] = df["language"].str.lower().str.strip()
                 df["authors"] = df["authors"].fillna("Unknown")
                 
@@ -85,6 +85,7 @@ def process_csv_task(self, file_path, user_email=None):
                                     serializer.save()
                                     results["success"] += 1
                                 else:
+                                    logger.error("Serializer Errors:", serializer.errors)
                                     results["errors"].append({
                                         "row": index + 2,
                                         "errors": serializer.errors
@@ -113,14 +114,11 @@ def process_csv_task(self, file_path, user_email=None):
                             user_email,
                             file_path,
                             results["success"],
-                            len(results["errors"]),
+                            results["errors"],
                             task_id
                         )
                     except Exception as email_error:
                         logger.error(f"Failed to send email notification: {str(email_error)}")
-                
-                return results
-                
             except pd.errors.EmptyDataError:
                 error_msg = f"The file {file_path} is empty or not a valid CSV"
                 logger.error(error_msg)
@@ -129,6 +127,9 @@ def process_csv_task(self, file_path, user_email=None):
                 error_msg = f"Error reading CSV file: {str(e)}"
                 logger.error(error_msg)
                 raise Exception(error_msg) from e
+            finally:
+                default_storage.delete(file_path)
+                return results
                 
     except Exception as e:
         logger.error(f"Failed to process file {file_path}: {str(e)}")
@@ -153,13 +154,16 @@ def process_csv_task(self, file_path, user_email=None):
             raise
 
 @shared_task
-def send_processing_completion_email(user_email, file_path, success_count, error_count, task_id):
+def send_processing_completion_email(user_email, file_path, successes, errors, task_id):
     """Send an email notification when CSV processing is complete."""
     subject = 'CSV Processing Complete'
+    error_count = len(errors)
+    error_sample = {error['row']: error['errors'] for error in errors[:5]}
     message = (
         f'Your file {file_path} has been processed.\n\n'
-        f'Successfully processed: {success_count} books\n'
-        f'Errors: {error_count}\n\n'
+        f'Successfully processed: {successes} books\n'
+        f'Failed to process: {error_count}\n\n'
+        f'Error sample: {error_sample}\n\n'
         f'Task ID: {task_id}'
     )
     

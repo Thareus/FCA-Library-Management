@@ -50,8 +50,8 @@ INSTALLED_APPS = [
     'corsheaders',
     
     # Local apps
-    'users.apps.UsersConfig',
-    'books.apps.BooksConfig',
+    'users',
+    'books',
     
     # Celery apps
     'django_celery_results',

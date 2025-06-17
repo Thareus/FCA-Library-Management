@@ -47,9 +47,9 @@ class BookViewSet(viewsets.ModelViewSet):
     serializer_class = BookSerializer
     permission_classes = [permissions.IsAuthenticated]
     filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
-    search_fields = ['title', 'author', 'isbn', 'amazon_id']
-    filterset_fields = ['status', 'language', 'category']
-    ordering_fields = ['title', 'author', 'publication_date', 'created_at']
+    search_fields = ['title', 'authors', 'isbn', 'amazon_id']
+    filterset_fields = ['language']
+    ordering_fields = ['title', 'authors', 'publication_date', 'created_at']
     ordering = ['title']
 
     def get_permissions(self):
@@ -62,14 +62,14 @@ class BookViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         return Book.objects.all().annotate(
-            available_copies=Count('instances', filter=Q(instances__status='A')),
-            total_copies=Count('instances')
+            available_copies=Count('book_instances', filter=Q(book_instances__status='A')),
+            total_copies=Count('book_instances')
         )
     
     @action(detail=False, methods=['post'])
     def search(self, request):
         """
-        Search for books by title or author.
+        Search for books by title or authors.
         """
         serializer = BookSearchSerializer(data=request.data)
         if not serializer.is_valid():
@@ -77,7 +77,7 @@ class BookViewSet(viewsets.ModelViewSet):
         
         query = serializer.validated_data['query']
         books = Book.objects.filter(
-            Q(title__icontains=query) | Q(author__icontains=query)
+            Q(title__icontains=query) | Q(authors__given_names__icontains=query) | Q(authors__surname__icontains=query)
         )
         
         page = self.paginate_queryset(books)
@@ -102,7 +102,7 @@ class BookViewSet(viewsets.ModelViewSet):
             return Response({'error': 'File is not a CSV'}, status=status.HTTP_400_BAD_REQUEST)
 
         path = default_storage.save(f'uploads/{file.name}', file)
-        process_csv_task.delay(path)
+        process_csv_task.delay(path, 'test@email.com')
         return Response({"message": "File successfully uploaded. You will receive an email when this file has finished processing."}, status=202)
     
     @action(detail=False, methods=['post'], permission_classes=[permissions.IsAdminUser])
@@ -132,7 +132,7 @@ class BookViewSet(viewsets.ModelViewSet):
 
 class BookSearchView(APIView):
     """
-    API endpoint that allows searching for books by title or author.
+    API endpoint that allows searching for books by title or authors.
     Returns books with their availability status.
     """
     permission_classes = [permissions.AllowAny]
@@ -146,11 +146,11 @@ class BookSearchView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Search for books where title or author name contains the query
+        # Search for books where title or authors name contains the query
         books = Book.objects.filter(
             Q(title__icontains=query) |
-            Q(author__given_names__icontains=query) |
-            Q(author__surname__icontains=query)
+            Q(authors__given_names__icontains=query) |
+            Q(authors__surname__icontains=query)
         ).distinct()
         
         # Annotate each book with its availability status
@@ -164,10 +164,9 @@ class BookSearchView(APIView):
                 'title': book.title,
                 'authors': [
                     f"{author.given_names} {author.surname}" 
-                    for author in book.author.all()
+                    for author in book.authors.all()
                 ],
                 'isbn': book.isbn,
-                'publisher': book.publisher,
                 'publication_year': book.publication_year,
                 'language': book.language,
                 'available_copies': available_copies,

@@ -14,6 +14,7 @@ class Author(models.Model):
 
     given_names = models.CharField(_('given names'), max_length=100)
     surname = models.CharField(_('surname'), max_length=100)
+    slug = models.SlugField(_('slug'), max_length=255, unique=True, blank=True)
     
     def __str__(self):
         return f"{self.given_names} {self.surname}"
@@ -37,7 +38,7 @@ class Book(models.Model):
     
     # Book details
     title = models.CharField(_('title'), max_length=200)
-    author = models.ManyToManyField(Author, related_name='books')
+    authors = models.ManyToManyField(Author, related_name='books')
     publication_year = models.IntegerField(help_text="Use negative numbers for BC years, positive for AD.", null=True, blank=True)
     language = models.CharField(_('language'), max_length=50, default='English')
     
@@ -64,7 +65,7 @@ class Book(models.Model):
     
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(f"{self.title} {self.author}")
+            self.slug = slugify(f"{self.title} {self.isbn}")
         super().save(*args, **kwargs)
     
     def get_absolute_url(self):
@@ -103,16 +104,7 @@ class BookInstance(models.Model):
     
     def __str__(self):
         return f"{self.book.title} - {self.status}"
-    
-    def save(self, *args, **kwargs):
-        if not self.pk:  # New book
-            self.book.status = BookStatus.AVAILABLE
-            self.book.save()
-        elif self.is_returned and not self.returned_date:
-            self.returned_date = timezone.now()
-            self.book.status = BookStatus.AVAILABLE
-            self.book.save()
-        super().save(*args, **kwargs)
+
 
 class BookInstanceHistory(models.Model):
     class Meta:
@@ -151,10 +143,10 @@ class BookInstanceHistory(models.Model):
     
     def save(self, *args, **kwargs):
         if not self.pk:
-            self.book.status = Book.Status.BORROWED
+            self.book.status = BookStatus.AVAILABLE
             self.book.save()
-        elif self.is_returned:
-            self.book.status = Book.Status.AVAILABLE
+        elif self.is_returned and not self.returned_date:
+            self.returned_date = timezone.now()
+            self.book.status = BookStatus.AVAILABLE
             self.book.save()
         super().save(*args, **kwargs)
-        
