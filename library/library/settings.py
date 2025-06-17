@@ -36,9 +36,13 @@ if 'DJANGO_ALLOWED_HOSTS' in os.environ:
 elif 'ALLOWED_HOSTS' in os.environ:
     ALLOWED_HOSTS = os.environ['ALLOWED_HOSTS'].split(',')
 
-# In production, you should set this to your domain names
-if not DEBUG:
-    ALLOWED_HOSTS = ['your-production-domain.com', 'www.your-production-domain.com']
+# If running in production and no hosts have been specified via environment
+# variables, fall back to allowing all hosts. You **should** set
+# DJANGO_ALLOWED_HOSTS in real deployments.
+if not DEBUG and ALLOWED_HOSTS == ['localhost', '127.0.0.1', 'backend']:
+    # Allow all hosts so the container will start without failing.
+    # Real deployments should supply DJANGO_ALLOWED_HOSTS.
+    ALLOWED_HOSTS = ['*']
 
 # Application definition
 
