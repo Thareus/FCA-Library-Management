@@ -45,7 +45,11 @@ const BookUploadPage = () => {
     setErrors([]);
 
     try {
-      const response = await api.post(API_PATHS.BOOKS_CSV_UPLOAD, formData);
+      const response = await api.post(API_PATHS.BOOKS_CSV_UPLOAD, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
 
       if (response.data) {
         if (response.data.message) {
