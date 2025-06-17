@@ -3,7 +3,7 @@ import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
 // Create a base axios instance with common configuration
 const createApiClient = (): AxiosInstance => {
   const api = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || '/api',
+    baseURL: import.meta.env.VITE_API_URL || '',
     headers: {
       'Content-Type': 'application/json',
     },
@@ -113,11 +113,10 @@ export const api = {
    * @returns {Promise<T>} - The response data
    */
   put: async <T = any, D = any>(
-    url: string, 
+    url: string,
     data?: D,
     config?: AxiosRequestConfig
   ): Promise<T> => {
-    console.log(url)
     const response = await apiClient.put<T>(url, data, config);
     return response.data;
   },
