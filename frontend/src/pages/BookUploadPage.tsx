@@ -16,6 +16,7 @@ import {
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import { ProtectedRoute } from '../components/ProtectedRoute';
 import { api } from '../api/apiClient';
+import { API_PATHS } from '../utils/apiPaths';
 
 const BookUploadPage = () => {
   const [file, setFile] = useState<File | null>(null);
@@ -44,7 +45,7 @@ const BookUploadPage = () => {
     setErrors([]);
 
     try {
-      const response = await api.post('/books/upload_csv/', formData);
+      const response = await api.post(API_PATHS.BOOKS_CSV_UPLOAD, formData);
 
       if (response.data) {
         if (response.data.message) {

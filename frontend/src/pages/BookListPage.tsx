@@ -17,6 +17,7 @@ import AddIcon from '@mui/icons-material/Add';
 import { useAuth } from '../hooks/useAuth';
 import {api} from '../api/apiClient';
 import { Book } from '../types';
+import { API_PATHS } from '../utils/apiPaths';
 
 export default function BookListPage() {
   const [books, setBooks] = useState([]);
@@ -29,10 +30,10 @@ export default function BookListPage() {
     try {
       let results;
       if (search) {
-        results = await api.get(`/books/search/?query=${encodeURIComponent(search)}`);
+        results = await api.get(API_PATHS.BOOKS_SEARCH(search));
         setBooks(results.results || []);
       } else {
-        results = await api.get('/books/');
+        results = await api.get(API_PATHS.BOOKS);
         setBooks(results.results || results);
       }
     } catch (err) {
