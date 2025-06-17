@@ -23,14 +23,14 @@ export const API_PATHS = {
   
   // Books
   BOOKS: apiPath('books/'),
+  BOOKS_SEARCH: (query: string) => apiPath(`books/search/?query=${encodeURIComponent(query)}`),
   BOOK_DETAIL: (id: string | number | undefined) => apiPath(`books/${id}/`),
+
+  BOOKS_CSV_UPLOAD: apiPath('books/upload_csv/'),
   BORROW_BOOK: apiPath('books/borrow/'),
   RETURN_BOOK: apiPath('books/return/'),
   WISHLIST_ADD: apiPath('books/wishlist/'),
   BOOK_WISHLISTS: (id: string | number | undefined) => apiPath(`books/${id}/wishlists_on/`),
-  
-  // Search
-  SEARCH: (query: string) => apiPath(`books/search/?query=${encodeURIComponent(query)}`),
 };
 
 export default API_PATHS;
