@@ -67,10 +67,9 @@ const BookUploadPage = () => {
       }
     } catch (error) {
       console.error('Upload error:', error);
-      setMessage({
-        type: 'error',
-        text: error instanceof Error ? error.message : 'An error occurred during upload'
-      });
+      setErrors([
+        error instanceof Error ? error.message : 'An error occurred during upload'
+      ]);
     } finally {
       setIsUploading(false);
     }
