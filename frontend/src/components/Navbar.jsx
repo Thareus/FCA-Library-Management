@@ -1,6 +1,7 @@
 import React from 'react';
 import { AppBar, Toolbar, Typography, Button, Box } from '@mui/material';
 import { Link, useNavigate } from 'react-router-dom';
+import { clearAuthToken } from '../api/apiClient';
 
 export default function Navbar() {
   const navigate = useNavigate();
@@ -8,7 +9,7 @@ export default function Navbar() {
   const isAuthenticated = !!localStorage.getItem('token');
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
+    clearAuthToken();
     navigate('/login');
   };
 
