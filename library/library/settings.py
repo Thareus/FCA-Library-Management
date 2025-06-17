@@ -25,7 +25,18 @@ SECRET_KEY = 'django-insecure-pkl%ib44fepto@dir6ncua=*l&g*o1!+dg@mg$qg+pta(k5h7a
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+# Default allowed hosts
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'backend']
+
+# Allow setting allowed hosts via environment variable (comma-separated)
+if 'DJANGO_ALLOWED_HOSTS' in os.environ:
+    ALLOWED_HOSTS = os.environ['DJANGO_ALLOWED_HOSTS'].split(',')
+elif 'ALLOWED_HOSTS' in os.environ:
+    ALLOWED_HOSTS = os.environ['ALLOWED_HOSTS'].split(',')
+
+# In production, you should set this to your domain names
+if not DEBUG:
+    ALLOWED_HOSTS = ['your-production-domain.com', 'www.your-production-domain.com']
 
 # Application definition
 
@@ -73,7 +84,25 @@ MIDDLEWARE = [
 ]
 
 # CORS settings
-CORS_ALLOW_ALL_ORIGINS = True  # For development only, restrict in production
+CORS_ALLOW_ALL_ORIGINS = False  # Disable allowing all origins for security
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
+
+# Allow CORS from any origin in development
+if DEBUG:
+    CORS_ALLOW_ALL_ORIGINS = True
+
+# Allow CORS from environment variable if set
+if 'CORS_ALLOWED_ORIGINS' in os.environ:
+    CORS_ALLOWED_ORIGINS = os.environ['CORS_ALLOWED_ORIGINS'].split(',')
+
+# Allow all headers and methods for development
+if DEBUG:
+    CORS_ALLOW_HEADERS = ['*']
+    CORS_ALLOW_METHODS = ['*']
 
 # REST Framework settings
 REST_FRAMEWORK = {
@@ -186,5 +215,4 @@ CELERY_TIMEZONE = TIME_ZONE
 
 # Email settings for Celery
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # For development
-# For production, use:
-# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'   # For production

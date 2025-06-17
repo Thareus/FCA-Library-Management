@@ -1,8 +1,10 @@
 from rest_framework import serializers, viewsets, status, permissions
+from rest_framework.decorators import action
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.views import ObtainAuthToken
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import generics
 
@@ -111,8 +113,64 @@ class UserWishlistViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return UserWishlist.objects.filter(user=self.request.user)
     
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+    @action(detail=False, methods=['post'], parser_classes=[MultiPartParser, FormParser])
+    def post(self, request):
+        """
+        Add a book to the user's wishlist.
+        """
+        serializer = UserWishlistSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        book = serializer.validated_data['book']
+        user = request.user
+        
+        # Add Book to User's Wishlist
+        wishlist = UserWishlist.objects.create(user=user, book=book)
+        
+        return Response({'message': 'Book added to wishlist successfully!', 'wishlist': UserWishlistSerializer(wishlist).data}, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['get'])
+    def get_for_user(self, request, pk=None):
+        """
+        Get all wishlists that include this book.
+        
+        Returns a list of UserWishlist objects where each contains:
+        - id: Wishlist entry ID
+        - user: User who wishlisted the book
+        - created_at: When the book was wishlisted
+        """
+        try:
+            user = self.request.user
+            wishlists = UserWishlist.objects.filter(user=user).select_related('book')
+            serializer = UserWishlistSerializer(wishlists, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response(
+                {'error': 'Error retrieving wishlists', 'detail': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=True, methods=['get'])
+    def get_for_book(self, request, pk=None):
+        """
+        Get all wishlists that include this book.
+        
+        Returns a list of UserWishlist objects where each contains:
+        - id: Wishlist entry ID
+        - user: User who wishlisted the book
+        - created_at: When the book was wishlisted
+        """
+        try:
+            book = self.get_object()
+            wishlists = UserWishlist.objects.filter(book=book).select_related('user')
+            serializer = UserWishlistSerializer(wishlists, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response(
+                {'error': 'Error retrieving wishlists', 'detail': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 class UserNotificationViewSet(viewsets.ReadOnlyModelViewSet):
     """

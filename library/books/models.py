@@ -52,14 +52,6 @@ class Book(models.Model):
     updated_at = models.DateTimeField(_('updated at'), auto_now=True)
     slug = models.SlugField(_('slug'), max_length=255, unique=True, blank=True)
 
-    @property
-    def total_copies(self):
-        return self.book_instance.count()
-
-    @property
-    def available_copies(self):
-        return self.book_instance.filter(status=BookStatus.AVAILABLE).count()
-
     def __str__(self):
         return f"{self.title}"
     
@@ -86,26 +78,26 @@ class BookInstance(models.Model):
         db_table = 'book_instances'
     
     book = models.ForeignKey('books.Book', on_delete=models.CASCADE)
-    
     status = models.CharField(
         _('status'),
         max_length=2,
         choices=BookStatus.choices,
         default=BookStatus.AVAILABLE
     )
-
     # Metadata
     created_at = models.DateTimeField(_('created at'), auto_now_add=True)
     updated_at = models.DateTimeField(_('updated at'), auto_now=True)
     
     @property
     def is_available(self):
-        return self.status == BookStatus.AVAILABLE
-    
+        most_recent_history = self.history.last()
+        if most_recent_history:
+            return most_recent_history.status == BookStatus.AVAILABLE
+        return False
+
     def __str__(self):
         return f"{self.book.title} - {self.status}"
-
-
+    
 class BookInstanceHistory(models.Model):
     class Meta:
         verbose_name = _('book instance history')
@@ -117,7 +109,7 @@ class BookInstanceHistory(models.Model):
     book_instance = models.ForeignKey(
         'books.BookInstance',
         on_delete=models.CASCADE,
-        related_name='book_instance_history',
+        related_name='history',
         verbose_name=_('book instance')
     )
     status = models.CharField(
@@ -129,7 +121,7 @@ class BookInstanceHistory(models.Model):
     user = models.ForeignKey(
         'users.CustomUser',
         on_delete=models.CASCADE,
-        related_name='book_history',
+        related_name='borrowed_history',
         verbose_name=_('user')
     )
     borrowed_date = models.DateTimeField(_('borrowed date'), auto_now_add=True)
@@ -143,10 +135,10 @@ class BookInstanceHistory(models.Model):
     
     def save(self, *args, **kwargs):
         if not self.pk:
-            self.book.status = BookStatus.AVAILABLE
-            self.book.save()
+            self.book_instance.status = BookStatus.AVAILABLE
+            self.book_instance.save()
         elif self.is_returned and not self.returned_date:
             self.returned_date = timezone.now()
-            self.book.status = BookStatus.AVAILABLE
-            self.book.save()
+            self.book_instance.status = BookStatus.AVAILABLE
+            self.book_instance.save()
         super().save(*args, **kwargs)

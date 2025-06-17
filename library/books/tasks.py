@@ -40,7 +40,7 @@ def process_csv_task(self, file_path, user_email=None):
             try:
                 df = pd.read_csv(f)
 
-                # Quickly check the CSV header
+                # Quickly check the CSV header for appropriate fields
                 required_fields = ['id', 'authors', 'publication year', 'title', 'language']
                 df.columns = [str(i).lower() for i in df.columns]
                 if not all(field in df.columns for field in required_fields):
@@ -49,8 +49,7 @@ def process_csv_task(self, file_path, user_email=None):
                 results["total_processed"] = len(df)
                 
                 # Standardize column names
-                df.columns = df.columns.str.strip().str.lower()
-                
+                df.columns = df.columns.str.strip().str.lower()                
                 # Rename columns to match model fields
                 df.rename(columns={
                     "id": "library_id",
@@ -87,13 +86,13 @@ def process_csv_task(self, file_path, user_email=None):
                                 else:
                                     logger.error("Serializer Errors:", serializer.errors)
                                     results["errors"].append({
-                                        "row": index + 2,
+                                        "row": index + 1,
                                         "errors": serializer.errors
                                     })
                             except Exception as e:
                                 logger.error(f"Error processing row {index}: {str(e)}")
                                 results["errors"].append({
-                                    "row": index + 2,
+                                    "row": index + 1,
                                     "errors": str(e)
                                 })
                 

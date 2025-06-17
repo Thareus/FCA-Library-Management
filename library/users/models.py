@@ -20,6 +20,7 @@ class CustomUser(AbstractUser):
     
     def __str__(self):
         return self.username
+            
 
 class UserWishlist(models.Model):
     """Model for users to add books to their wishlist."""
@@ -40,15 +41,12 @@ class UserWishlist(models.Model):
     book = models.ForeignKey(
         'books.Book',
         on_delete=models.CASCADE,
-        related_name='wishlisted_by',
+        related_name='wishlists_on',
         verbose_name=_('book')
     )
     
     # Metadata
     created_at = models.DateTimeField(_('created at'), auto_now_add=True)
-
-    def __str__(self):
-        return f"{self.user.username}'s wishlist: {self.book.title}"
 
 class UserNotification(models.Model):
     """Model to track notifications for when a book becomes available."""

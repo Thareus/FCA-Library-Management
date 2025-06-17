@@ -3,8 +3,10 @@ from django.db import transaction
 import re
 import iso639
 import bcp47
+import logging
+from .models import Author, Book, BookInstance, BookInstanceHistory
 
-from .models import Author, Book, BookInstance
+logger = logging.getLogger(__name__)
 
 class AuthorSerializer(serializers.ModelSerializer):
     """Serializer for the Author model."""
@@ -35,7 +37,12 @@ class BookSerializer(serializers.ModelSerializer):
             'language',
             'created_at',
             'updated_at',
-            'slug'
+            'slug',
+            # Method Fields
+            'authors_display',
+            'total_copies',
+            'available_copies',
+            'book_instances',
         ]
         read_only_fields = ['id', 'created_at', 'updated_at', 'slug']
         extra_kwargs = {
@@ -43,6 +50,28 @@ class BookSerializer(serializers.ModelSerializer):
             'isbn': {'required': True},
             'title': {'required': True},
         }
+    
+    authors = serializers.PrimaryKeyRelatedField(
+        queryset=Author.objects.all(),
+        many=True,
+        write_only=True
+    )
+    authors_display = serializers.SerializerMethodField(read_only=True)
+    total_copies = serializers.SerializerMethodField(read_only=True)
+    available_copies = serializers.SerializerMethodField(read_only=True)
+    book_instances = serializers.SerializerMethodField(read_only=True)
+    
+    def get_authors_display(self, obj):
+        return (', '.join([f"{author.given_names} {author.surname}" for author in obj.authors.all()]))
+    
+    def get_total_copies(self, obj):
+        return obj.book_instances.count()
+    
+    def get_available_copies(self, obj):
+        return obj.book_instances.filter(status='A').count()
+
+    def get_book_instances(self, obj):
+        return BookInstanceSerializer(obj.book_instances.all(), many=True).data
     
     def validate_library_id(self, value):
         if not re.match(r'^\w{10}$', value):
@@ -97,28 +126,46 @@ class BookImportSerializer(BookSerializer):
         ]
         read_only_fields = ['id', 'created_at', 'updated_at', 'slug']
         extra_kwargs = {
-            'library_id': {'required': True},
-            'isbn': {'required': True},
+            'library_id': {'required': True, 'validators': []},
+            'isbn': {'required': True, 'validators': []},
             'title': {'required': True},
         }
 
-    authors = serializers.CharField(write_only=True, required=False)
-    authors_display = serializers.SerializerMethodField(read_only=True)
-
-    def get_authors_display(self, obj):
-        """Return authors as comma-separated string for read operations"""
-        return ', '.join([author.name for author in obj.authors.all()])
+    # Accommodate authors format    
+    authors = serializers.CharField(write_only=True)  # Accepts a CSV string
 
     def create(self, validated_data):
+        print("CREATE BOOK")
         authors_string = validated_data.pop('authors', '')
         
         with transaction.atomic():
-            book = Book.objects.get_or_create(**validated_data)
+            # Get or create the book using the unique fields
+            book, created = Book.objects.get_or_create(
+                library_id=validated_data.get('library_id'),
+                defaults=validated_data
+            )
+            
+            # If the book already exists, update fields
+            if not created:
+                logger.warning(f"Book with library_id {validated_data['library_id']} already exists. Updating fields.")
+                for key, value in validated_data.items():
+                    setattr(book, key, value)
+                book.save()
+            
+            # Handle authors if provided
             if authors_string:
                 self._process_authors(book, authors_string)
+            
+            # Create book instance if none exists
             book_instances = book.book_instances.all()
+            print("BOOK INSTANCES", book_instances)
             if not book_instances:
-                BookInstance.objects.create(book=book, status='A')
+                book_instance_serializer = BookInstanceSerializer(data={'book':book.pk, 'status':'A'})
+                if book_instance_serializer.is_valid():
+                    print("BOOK INSTANCE VALID")
+                    book_instance_serializer.save()
+                else:
+                    print("BOOK INSTANCE INVALID", book_instance_serializer.errors)
         return book
     
     def update(self, instance, validated_data):
@@ -134,15 +181,23 @@ class BookImportSerializer(BookSerializer):
             if authors_string is not None:
                 instance.authors.clear()  # Remove existing relationships
                 self._process_authors(instance, authors_string)
-        
+            
+            # Create book instance if none exists
+            book_instances = instance.book_instances.all()
+            if not book_instances:
+                book_instance_serializer = BookInstanceSerializer(data={'book':instance.pk, 'status':'A'})
+                if book_instance_serializer.is_valid():
+                    print("BOOK INSTANCE VALID")
+                    book_instance_serializer.save()
+                else:
+                    print("BOOK INSTANCE INVALID", book_instance_serializer.errors)
         return instance
     
-    def _process_authors(self, book, authors_string):
-        """Parse author string and create/link Author instances"""
-        if not authors_string.strip():
+    def _process_authors(self, book, author_value):
+        if not author_value.strip():
             return
             
-        author_names = [name.strip() for name in authors_string.split(',')]
+        author_names = [name.strip() for name in author_value.split(',')]
         
         for author_name in author_names:
             # Split into given names and surname (assuming last space separates them)
@@ -164,10 +219,61 @@ class BookImportSerializer(BookSerializer):
             )
             book.authors.add(author)
 
+class BookBorrowSerializer(serializers.Serializer):
+    book = serializers.PrimaryKeyRelatedField(queryset=Book.objects.all())
+
+class BookWishlistSerializer(serializers.Serializer):
+    book = serializers.PrimaryKeyRelatedField(queryset=Book.objects.all())
 
 class BookSearchSerializer(serializers.Serializer):
     """Serializer for book search functionality."""
     query = serializers.CharField(required=True, help_text="Search query (title or author)")
+
+class BookInstanceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BookInstance
+        fields = [
+            'id',
+            'book',
+            'status',
+            'created_at',
+            'updated_at',
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+    
+    def create(self, validated_data):
+        with transaction.atomic():
+            instance = BookInstance.objects.create(**validated_data)
+            history_serializer = BookInstanceHistorySerializer(data={
+                'book_instance':instance.pk, 
+                'status':'A', 
+                'user':None,
+                'borrowed_date':None,
+                'due_date':None,
+                'returned_date':None,
+                'is_returned':True
+            })
+            if history_serializer.is_valid():
+                print("HISTORY VALID")
+                history_serializer.save()
+            else:
+                print("HISTORY INVALID", history_serializer.errors)
+        return instance
+
+class BookInstanceHistorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BookInstanceHistory
+        fields = [
+            'id',
+            'book_instance',
+            'status',
+            'user',
+            'borrowed_date',
+            'due_date',
+            'returned_date',
+            'is_returned',
+        ]
+        read_only_fields = ['id', 'borrowed_date', 'due_date', 'returned_date', 'is_returned']
 
 class AmazonIDUpdateSerializer(serializers.Serializer):
     """Serializer for updating Amazon IDs for books."""

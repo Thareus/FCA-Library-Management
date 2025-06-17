@@ -8,5 +8,4 @@ router.register(r'authors', views.AuthorViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
-    path('books/search/', views.BookSearchView.as_view(), name='book-search'),
 ]

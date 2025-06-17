@@ -10,13 +10,15 @@ from django.db.models import Q, Count
 from django_filters.rest_framework import DjangoFilterBackend
 import pandas as pd
 
-from .models import Author, Book
+from .models import Author, Book, BookInstance
 from .serializers import (
-    BookSerializer, BookSearchSerializer,
+    BookSerializer, BookSearchSerializer, BookBorrowSerializer,
     AmazonIDUpdateSerializer, AuthorSerializer
 )
 from .tasks import process_csv_task
 
+from users.models import UserWishlist
+from users.serializers import UserWishlistSerializer
 
 class AuthorViewSet(viewsets.ModelViewSet):
     """
@@ -59,19 +61,13 @@ class BookViewSet(viewsets.ModelViewSet):
         if self.action in ['create', 'update', 'partial_update', 'destroy', 'update_amazon_ids']:
             return [permissions.IsAdminUser()]
         return [permissions.IsAuthenticated()]
-    
-    def get_queryset(self):
-        return Book.objects.all().annotate(
-            available_copies=Count('book_instances', filter=Q(book_instances__status='A')),
-            total_copies=Count('book_instances')
-        )
-    
-    @action(detail=False, methods=['post'])
+        
+    @action(detail=False, methods=['get'])
     def search(self, request):
         """
         Search for books by title or authors.
         """
-        serializer = BookSearchSerializer(data=request.data)
+        serializer = BookSearchSerializer(data=request.query_params)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
@@ -89,6 +85,34 @@ class BookViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
     
     @action(detail=False, methods=['post'], parser_classes=[MultiPartParser, FormParser])
+    def borrow(self, request):
+        """
+        Borrow a book.
+        """
+        serializer = BookBorrowSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        book = serializer.validated_data['book']
+        user = request.user
+    
+        # Get Available Book Instances
+        book_instances = BookInstance.objects.filter(book=book, status='A')
+
+        if not book_instances.exists():
+            return Response({'error': 'Book is not available for borrowing'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Borrow Book Instance
+        book_instance = book_instances.first()
+        book_instance.status = 'B'
+        book_instance.borrower = user
+        book_instance.save()
+
+        # Delete UserWishlist instance
+        UserWishlist.objects.filter(book=book, user=user).delete()
+        return Response({'message': 'Book borrowed successfully!'}, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['post'], parser_classes=[MultiPartParser, FormParser])
     def upload_csv(self, request):
         """
         Upload a CSV file containing book data.
@@ -104,6 +128,27 @@ class BookViewSet(viewsets.ModelViewSet):
         path = default_storage.save(f'uploads/{file.name}', file)
         process_csv_task.delay(path, 'test@email.com')
         return Response({"message": "File successfully uploaded. You will receive an email when this file has finished processing."}, status=202)
+    
+    @action(detail=True, methods=['get'])
+    def wishlists_on(self, request, pk=None):
+        """
+        Get all wishlists that include this book.
+        
+        Returns a list of UserWishlist objects where each contains:
+        - id: Wishlist entry ID
+        - user: User who wishlisted the book
+        - created_at: When the book was wishlisted
+        """
+        try:
+            book = self.get_object()
+            wishlists = UserWishlist.objects.filter(book=book).select_related('user')
+            serializer = UserWishlistSerializer(wishlists, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response(
+                {'error': 'Error retrieving wishlists', 'detail': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
     
     @action(detail=False, methods=['post'], permission_classes=[permissions.IsAdminUser])
     def update_amazon_ids(self, request):
@@ -127,56 +172,4 @@ class BookViewSet(viewsets.ModelViewSet):
         return Response({
             'message': f'Successfully updated {len(updated_books)} books',
             'updated_books': BookSerializer(updated_books, many=True).data
-        })
-
-
-class BookSearchView(APIView):
-    """
-    API endpoint that allows searching for books by title or authors.
-    Returns books with their availability status.
-    """
-    permission_classes = [permissions.AllowAny]
-    
-    def get(self, request):
-        query = request.query_params.get('query', '').strip()
-        
-        if not query:
-            return Response(
-                {"error": "Search query parameter 'query' is required"}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        # Search for books where title or authors name contains the query
-        books = Book.objects.filter(
-            Q(title__icontains=query) |
-            Q(authors__given_names__icontains=query) |
-            Q(authors__surname__icontains=query)
-        ).distinct()
-        
-        # Annotate each book with its availability status
-        book_data = []
-        for book in books:
-            available_copies = book.instances.filter(status='A').count()
-            total_copies = book.instances.count()
-            
-            book_data.append({
-                'id': book.id,
-                'title': book.title,
-                'authors': [
-                    f"{author.given_names} {author.surname}" 
-                    for author in book.authors.all()
-                ],
-                'isbn': book.isbn,
-                'publication_year': book.publication_year,
-                'language': book.language,
-                'available_copies': available_copies,
-                'total_copies': total_copies,
-                'is_available': available_copies > 0,
-                'amazon_id': book.amazon_id
-            })
-        
-        return Response({
-            'count': len(book_data),
-            'query': query,
-            'results': book_data
         })

@@ -15,6 +15,11 @@ COPY ./frontend /app
 # Expose port
 EXPOSE 5173
 
+# Set environment variables for development
+ENV VITE_API_URL=/api
+ENV VITE_USE_PROXY=true
+ENV VITE_API_SERVER_URL=http://backend:8000
+
 # Start development server
 CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
 
@@ -47,7 +52,12 @@ WORKDIR /app
 # Copy built assets from builder
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Copy nginx config
+# Copy nginx config with proper routing
+COPY ./docker/frontend/nginx.conf /etc/nginx/conf.d/default.conf
+
+# Set environment variables for production
+ENV VITE_API_URL=/api
+ENV VITE_USE_PROXY=false
 COPY ./frontend/nginx.conf /etc/nginx/conf.d/default.conf
 
 # Create necessary directories and set permissions

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
   Box, 
   Typography, 
@@ -10,18 +10,20 @@ import {
   Alert,
   Paper,
   Avatar,
-  Divider
+  Divider,
+  Button
 } from '@mui/material';
 import axios from 'axios';
 import { User } from '../types';
 import { useAuth } from '../hooks/useAuth';
 import { api } from '../api/apiClient';
 
-const UserProfile: React.FC = () => {
+export default function UserProfile() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
   const [user, setUser] = useState<User | null>(null);
   const { isStaff, isLoading: isAuthLoading } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -73,6 +75,11 @@ const UserProfile: React.FC = () => {
   if (!user) return <Alert severity="info">User not found</Alert>;
 
   return (
+    <>
+    <Button variant="contained" color="primary" sx={{ mt: 2 }} onClick={() => navigate('/books')}>
+      Back to Books
+    </Button>
+    {loading && <CircularProgress />}
     <Box sx={{ maxWidth: 800, margin: '0 auto', p: 3 }}>
       <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
         <Box display="flex" alignItems="center" mb={3}>
@@ -160,7 +167,6 @@ const UserProfile: React.FC = () => {
         )}
       </Paper>
     </Box>
-  );
+    </> 
+  );      
 };
-
-export default UserProfile;

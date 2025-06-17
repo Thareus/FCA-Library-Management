@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, Button, TextField, Typography, Alert } from '@mui/material';
 import { api, setAuthToken } from '../api/apiClient';
+import { API_PATHS } from '../utils/apiPaths';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -13,7 +14,7 @@ export default function LoginPage() {
     e.preventDefault();
     setError('');
     try {
-      const data = await api.post<{ token: string }>('/users/login/', { email, password });
+      const data = await api.post<{ token: string }>(API_PATHS.LOGIN, { email, password });
       setAuthToken(data.token);
       navigate('/books');
     } catch (error: any) {
