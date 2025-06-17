@@ -18,7 +18,6 @@ export default defineConfig(({ command, mode }) => {
       target: apiServerUrl,
       changeOrigin: true,
       secure: false,
-      rewrite: (path) => path.replace(/^\/api/, '')
     },
   } : undefined;
 
