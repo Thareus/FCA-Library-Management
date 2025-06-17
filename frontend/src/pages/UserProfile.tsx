@@ -15,6 +15,7 @@ import {
 import axios from 'axios';
 import { User } from '../types';
 import { useAuth } from '../hooks/useAuth';
+import { api } from '../api/apiClient';
 
 const UserProfile: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
@@ -31,7 +32,7 @@ const UserProfile: React.FC = () => {
           throw new Error('No authentication token found. Please log in.');
         }
 
-        const response = await axios.get<User>('/api/users/profile/', {
+        const user = await api.get<User>('/users/profile/', {
           headers: {
             'Authorization': `Token ${token}`,
             'Content-Type': 'application/json'
@@ -39,8 +40,8 @@ const UserProfile: React.FC = () => {
           withCredentials: true
         });
         
-        setUser(response.data);
-      } catch (error) {
+        setUser(user);
+      } catch (error: any) {
         let errorMessage = 'Failed to load user profile';
         
         if (axios.isAxiosError(error)) {

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import {api} from '../api/apiClient';
 
 export const useAuth = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -20,16 +20,16 @@ export const useAuth = () => {
       }
 
       try {
-        const response = await axios.get('/api/users/me/', {
+        const response = await api.get('/users/me/', {
           headers: { 'Authorization': `Token ${token}` }
         });
         
         setIsAuthenticated(true);
-        setIsStaff(response.data.is_staff || false);
+        setIsStaff(response.is_staff || false);
         setUser({
-          id: response.data.id,
-          email: response.data.email,
-          is_staff: response.data.is_staff
+          id: response.id,
+          email: response.email,
+          is_staff: response.is_staff
         });
       } catch (error) {
         console.error('Authentication check failed:', error);

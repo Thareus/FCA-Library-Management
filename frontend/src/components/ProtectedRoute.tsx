@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import axios from 'axios';
+import {api} from '../api/apiClient';
 
 export const ProtectedRoute = ({ children, requireStaff = false }: { 
   children: React.ReactNode;
@@ -21,7 +21,7 @@ export const ProtectedRoute = ({ children, requireStaff = false }: {
       }
 
       try {
-        const response = await axios.get('/api/users/me/', {
+        const response = await api.get('/users/me/', {
           headers: { 'Authorization': `Token ${token}` }
         });
         

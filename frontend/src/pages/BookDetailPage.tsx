@@ -2,10 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Box, Typography, Button, CircularProgress, Alert } from '@mui/material';
 import axios from 'axios';
+import { Book } from '@/types';
+import {api} from '../api/apiClient';
 
 export default function BookDetailPage() {
   const { id } = useParams();
-  const [book, setBook] = useState(null);
+  const [book, setBook] = useState<Book | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [borrowMsg, setBorrowMsg] = useState('');
@@ -14,7 +16,7 @@ export default function BookDetailPage() {
     const fetchBook = async () => {
       setLoading(true);
       try {
-        const res = await axios.get(`/api/books/books/${id}/`);
+        const res = await api.get(`/books/${id}/`);
         setBook(res.data);
       } catch (err) {
         setError('Book not found');
@@ -28,9 +30,9 @@ export default function BookDetailPage() {
     setBorrowMsg('');
     try {
       const token = localStorage.getItem('token');
-      await axios.post('/api/books/borrow/', { book: id }, { headers: { Authorization: `Token ${token}` } });
+      await api.post('/books/borrow/', { book: id }, { headers: { Authorization: `Token ${token}` } });
       setBorrowMsg('Book borrowed successfully!');
-    } catch (err) {
+    } catch (err: any) {
       setBorrowMsg(err.response?.data?.detail || 'Could not borrow book');
     }
   };

@@ -23,13 +23,12 @@ const createApiClient = (): AxiosInstance => {
     }
   );
 
-  // Add a response interceptor to handle common errors
+  // Response interceptor
   api.interceptors.response.use(
     (response) => response,
     (error) => {
-      // Handle common errors here (e.g., 401 Unauthorized)
-      if (error.response?.status === 401) {
-        // Redirect to login or refresh token
+      if (error.response?.status === 401) { // Unauthorised
+        // Redirect to login
         localStorage.removeItem('token');
         window.location.href = '/login';
       }
@@ -106,6 +105,7 @@ export const api = {
     data?: D,
     config?: AxiosRequestConfig
   ): Promise<T> => {
+    console.log(url)
     const response = await apiClient.put<T>(url, data, config);
     return response.data;
   },

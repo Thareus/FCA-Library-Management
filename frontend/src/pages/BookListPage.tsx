@@ -15,7 +15,7 @@ import {
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import { useAuth } from '../hooks/useAuth';
-import axios from 'axios';
+import {api} from '../api/apiClient';
 import { Book } from '../types';
 
 export default function BookListPage() {
@@ -29,10 +29,10 @@ export default function BookListPage() {
     try {
       let res;
       if (search) {
-        res = await axios.get(`/api/books/search/?query=${encodeURIComponent(search)}`);
+        res = await api.get(`/books/search/?query=${encodeURIComponent(search)}`);
         setBooks(res.data.results || []);
       } else {
-        res = await axios.get('/api/books/books/');
+        res = await api.get('/books/');
         setBooks(res.data.results || res.data);
       }
     } catch (err) {

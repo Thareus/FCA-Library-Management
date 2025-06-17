@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, Button, TextField, Typography, Alert } from '@mui/material';
-import axios from 'axios';
+import { api } from '../api/apiClient';
 
 export default function RegisterPage() {
   const [form, setForm] = useState({
@@ -21,14 +21,12 @@ export default function RegisterPage() {
     e.preventDefault();
     setError('');
     try {
-      await axios.post('/api/users/register/', form);
+      await api.post('/users/register/', form);
       navigate('/login');
     } catch (error) {
-      if (axios.isAxiosError(error)) {
-        for (const key in error.response?.data) {
-          setError(error.response?.data?.[key]?.[0]);
-        }
-      } else if (error instanceof Error) {
+      if (error instanceof Error) {
+        setError(error.message);
+      } else {
         setError('Registration failed');
       }
     }
