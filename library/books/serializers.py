@@ -135,7 +135,7 @@ class BookImportSerializer(BookSerializer):
     authors = serializers.CharField(write_only=True)  # Accepts a CSV string
 
     def create(self, validated_data):
-        print("CREATE BOOK")
+        logger.debug("CREATE BOOK")
         authors_string = validated_data.pop('authors', '')
         
         with transaction.atomic():
@@ -157,15 +157,19 @@ class BookImportSerializer(BookSerializer):
                 self._process_authors(book, authors_string)
             
             # Create book instance if none exists
-            book_instances = book.book_instances.all()
-            print("BOOK INSTANCES", book_instances)
-            if not book_instances:
-                book_instance_serializer = BookInstanceSerializer(data={'book':book.pk, 'status':'A'})
+            if not book.book_instances.exists():
+                book_instance_serializer = BookInstanceSerializer(data={
+                    'book': book.pk,
+                    'status': 'A'
+                })
                 if book_instance_serializer.is_valid():
-                    print("BOOK INSTANCE VALID")
+                    logger.debug("BOOK INSTANCE VALID")
                     book_instance_serializer.save()
                 else:
-                    print("BOOK INSTANCE INVALID", book_instance_serializer.errors)
+                    logger.warning(
+                        "BOOK INSTANCE INVALID %s",
+                        book_instance_serializer.errors
+                    )
         return book
     
     def update(self, instance, validated_data):
@@ -183,14 +187,19 @@ class BookImportSerializer(BookSerializer):
                 self._process_authors(instance, authors_string)
             
             # Create book instance if none exists
-            book_instances = instance.book_instances.all()
-            if not book_instances:
-                book_instance_serializer = BookInstanceSerializer(data={'book':instance.pk, 'status':'A'})
+            if not instance.book_instances.exists():
+                book_instance_serializer = BookInstanceSerializer(data={
+                    'book': instance.pk,
+                    'status': 'A'
+                })
                 if book_instance_serializer.is_valid():
-                    print("BOOK INSTANCE VALID")
+                    logger.debug("BOOK INSTANCE VALID")
                     book_instance_serializer.save()
                 else:
-                    print("BOOK INSTANCE INVALID", book_instance_serializer.errors)
+                    logger.warning(
+                        "BOOK INSTANCE INVALID %s",
+                        book_instance_serializer.errors
+                    )
         return instance
     
     def _process_authors(self, book, author_value):
@@ -244,20 +253,6 @@ class BookInstanceSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         with transaction.atomic():
             instance = BookInstance.objects.create(**validated_data)
-            history_serializer = BookInstanceHistorySerializer(data={
-                'book_instance':instance.pk, 
-                'status':'A', 
-                'user':None,
-                'borrowed_date':None,
-                'due_date':None,
-                'returned_date':None,
-                'is_returned':True
-            })
-            if history_serializer.is_valid():
-                print("HISTORY VALID")
-                history_serializer.save()
-            else:
-                print("HISTORY INVALID", history_serializer.errors)
         return instance
 
 class BookInstanceHistorySerializer(serializers.ModelSerializer):
@@ -273,7 +268,7 @@ class BookInstanceHistorySerializer(serializers.ModelSerializer):
             'returned_date',
             'is_returned',
         ]
-        read_only_fields = ['id', 'borrowed_date', 'due_date', 'returned_date', 'is_returned']
+        read_only_fields = ['id', 'borrowed_date', 'returned_date', 'is_returned']
 
 class AmazonIDUpdateSerializer(serializers.Serializer):
     """Serializer for updating Amazon IDs for books."""
