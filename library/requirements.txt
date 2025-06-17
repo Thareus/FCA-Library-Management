@@ -27,6 +27,7 @@ djangorestframework_simplejwt==5.5.0
 drf-yasg==1.21.10
 gevent==25.5.1
 greenlet==3.2.3
+gunicorn==23.0.0
 idna==3.10
 inflection==0.5.1
 iso-639==0.4.5
