@@ -58,7 +58,6 @@ COPY ./docker/frontend/nginx.conf /etc/nginx/conf.d/default.conf
 # Set environment variables for production
 ENV VITE_API_URL=/api
 ENV VITE_USE_PROXY=false
-COPY ./frontend/nginx.conf /etc/nginx/conf.d/default.conf
 
 # Create necessary directories and set permissions
 RUN mkdir -p /usr/share/nginx/html/assets && \
