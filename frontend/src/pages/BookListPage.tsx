@@ -27,13 +27,13 @@ export default function BookListPage() {
   const fetchBooks = async (search = '') => {
     setLoading(true);
     try {
-      let res;
+      let results;
       if (search) {
-        res = await api.get(`/books/search/?query=${encodeURIComponent(search)}`);
-        setBooks(res.data.results || []);
+        results = await api.get(`/books/search/?query=${encodeURIComponent(search)}`);
+        setBooks(results.results || []);
       } else {
-        res = await api.get('/books/');
-        setBooks(res.data.results || res.data);
+        results = await api.get('/books/');
+        setBooks(results.results || results);
       }
     } catch (err) {
       setBooks([]);

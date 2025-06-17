@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { Box, Typography, Button, CircularProgress, Alert } from '@mui/material';
 import axios from 'axios';
 import { Book } from '@/types';
-import {api} from '../api/apiClient';
+import { api } from '../api/apiClient';
 
 export default function BookDetailPage() {
   const { id } = useParams();
@@ -16,8 +16,8 @@ export default function BookDetailPage() {
     const fetchBook = async () => {
       setLoading(true);
       try {
-        const res = await api.get(`/books/${id}/`);
-        setBook(res.data);
+        const res = await api.get<Book>(`/books/${id}/`);
+        setBook(res);
       } catch (err) {
         setError('Book not found');
       }
@@ -29,8 +29,7 @@ export default function BookDetailPage() {
   const handleBorrow = async () => {
     setBorrowMsg('');
     try {
-      const token = localStorage.getItem('token');
-      await api.post('/books/borrow/', { book: id }, { headers: { Authorization: `Token ${token}` } });
+      await api.post('/books/borrow/', { book: id });
       setBorrowMsg('Book borrowed successfully!');
     } catch (err: any) {
       setBorrowMsg(err.response?.data?.detail || 'Could not borrow book');

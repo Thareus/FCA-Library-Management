@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import {api} from '../api/apiClient';
+import { api, clearAuthToken } from '../api/apiClient';
 
 export const ProtectedRoute = ({ children, requireStaff = false }: { 
   children: React.ReactNode;
@@ -21,15 +21,13 @@ export const ProtectedRoute = ({ children, requireStaff = false }: {
       }
 
       try {
-        const response = await api.get('/users/me/', {
-          headers: { 'Authorization': `Token ${token}` }
-        });
-        
+        const response = await api.get('/users/me/');
+
         setIsAuthenticated(true);
-        setIsStaff(response.data.is_staff || false);
+        setIsStaff(response.is_staff || false);
       } catch (error) {
         console.error('Authentication check failed:', error);
-        localStorage.removeItem('token');
+        clearAuthToken();
         setIsAuthenticated(false);
       } finally {
         setIsLoading(false);

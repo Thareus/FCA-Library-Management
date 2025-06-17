@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, Button, TextField, Typography, Alert } from '@mui/material';
-import { api } from '../api/apiClient';
+import { api, setAuthToken } from '../api/apiClient';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -14,7 +14,7 @@ export default function LoginPage() {
     setError('');
     try {
       const data = await api.post<{ token: string }>('/users/login/', { email, password });
-      localStorage.setItem('token', data.token);
+      setAuthToken(data.token);
       navigate('/books');
     } catch (error: any) {
       let errorMessage = 'Login failed';

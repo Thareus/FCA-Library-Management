@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import {api} from '../api/apiClient';
+import { api, clearAuthToken } from '../api/apiClient';
 
 export const useAuth = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -20,9 +20,7 @@ export const useAuth = () => {
       }
 
       try {
-        const response = await api.get('/users/me/', {
-          headers: { 'Authorization': `Token ${token}` }
-        });
+        const response = await api.get('/users/me/');
         
         setIsAuthenticated(true);
         setIsStaff(response.is_staff || false);
@@ -33,7 +31,7 @@ export const useAuth = () => {
         });
       } catch (error) {
         console.error('Authentication check failed:', error);
-        localStorage.removeItem('token');
+        clearAuthToken();
       } finally {
         setIsLoading(false);
       }

@@ -29,7 +29,7 @@ const createApiClient = (): AxiosInstance => {
     (error) => {
       if (error.response?.status === 401) { // Unauthorised
         // Redirect to login
-        localStorage.removeItem('token');
+        clearAuthToken();
         window.location.href = '/login';
       }
       return Promise.reject(error);
@@ -41,6 +41,18 @@ const createApiClient = (): AxiosInstance => {
 
 // Export the api client instance
 export const apiClient = createApiClient();
+
+// Helper to set the auth token in both localStorage and axios defaults
+export const setAuthToken = (token: string) => {
+  localStorage.setItem('token', token);
+  apiClient.defaults.headers.Authorization = `Token ${token}`;
+};
+
+// Helper to clear the auth token from storage and axios defaults
+export const clearAuthToken = () => {
+  localStorage.removeItem('token');
+  delete apiClient.defaults.headers.Authorization;
+};
 
 // Custom hook to use the API client
 export const useApi = () => {
