@@ -113,11 +113,10 @@ export const api = {
    * @returns {Promise<T>} - The response data
    */
   put: async <T = any, D = any>(
-    url: string, 
+    url: string,
     data?: D,
     config?: AxiosRequestConfig
   ): Promise<T> => {
-    console.log(url)
     const response = await apiClient.put<T>(url, data, config);
     return response.data;
   },

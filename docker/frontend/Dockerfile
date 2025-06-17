@@ -16,7 +16,7 @@ COPY ./frontend /app
 EXPOSE 5173
 
 # Set environment variables for development
-ENV VITE_API_URL=/api
+ENV VITE_API_URL=
 ENV VITE_USE_PROXY=true
 ENV VITE_API_SERVER_URL=http://backend:8000
 
@@ -56,7 +56,7 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 COPY ./docker/frontend/nginx.conf /etc/nginx/conf.d/default.conf
 
 # Set environment variables for production
-ENV VITE_API_URL=/api
+ENV VITE_API_URL=
 ENV VITE_USE_PROXY=false
 
 # Create necessary directories and set permissions

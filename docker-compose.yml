@@ -77,7 +77,7 @@ services:
       - /app/node_modules
     environment:
       - CHOKIDAR_USEPOLLING=1
-      - VITE_API_URL=/api
+      - VITE_API_URL=
       - VITE_USE_PROXY=true
       - VITE_API_SERVER_URL=http://backend:8000
     depends_on:

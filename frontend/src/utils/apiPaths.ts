@@ -1,13 +1,13 @@
-// Utility function to ensure all API paths are prefixed with /api
+// Utility function to ensure API paths start with /api
 const apiPath = (path: string): string => {
-  // Remove leading slashes to avoid double slashes
+  // Remove any leading slashes so we can safely build the URL
   const cleanPath = path.startsWith('/') ? path.substring(1) : path;
-  
-  // Don't add /api if it's already there or if it's a full URL
+
+  // Skip prefixing when the path already begins with /api or is a full URL
   if (cleanPath.startsWith('api/') || cleanPath.startsWith('http')) {
     return `/${cleanPath}`;
   }
-  
+
   return `/api/${cleanPath}`;
 };
 
