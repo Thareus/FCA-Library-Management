@@ -65,7 +65,7 @@ RUN mkdir -p /usr/share/nginx/html/assets && \
     chmod -R 755 /usr/share/nginx/html
 
 # Expose port
-EXPOSE 5173
+EXPOSE 80
 
 # Start nginx
 CMD ["nginx", "-g", "daemon off;"]
