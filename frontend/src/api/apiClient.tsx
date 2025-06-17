@@ -3,7 +3,7 @@ import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
 // Create a base axios instance with common configuration
 const createApiClient = (): AxiosInstance => {
   const api = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || '/api',
+    baseURL: '',
     headers: {
       'Content-Type': 'application/json',
     },

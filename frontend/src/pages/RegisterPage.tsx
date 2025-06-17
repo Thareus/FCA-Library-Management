@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, Button, TextField, Typography, Alert } from '@mui/material';
 import { api } from '../api/apiClient';
+import { API_PATHS } from '../utils/apiPaths';
 
 export default function RegisterPage() {
   const [form, setForm] = useState({
@@ -21,7 +22,7 @@ export default function RegisterPage() {
     e.preventDefault();
     setError('');
     try {
-      await api.post('/users/register/', form);
+      await api.post(API_PATHS.REGISTER, form);
       navigate('/login');
     } catch (error) {
       if (error instanceof Error) {

@@ -15,6 +15,7 @@ import {
 } from '@mui/material';
 import axios from 'axios';
 import { User } from '../types';
+import { API_PATHS } from '../utils/apiPaths';
 import { useAuth } from '../hooks/useAuth';
 import { api } from '../api/apiClient';
 
@@ -34,7 +35,7 @@ export default function UserProfile() {
           throw new Error('No authentication token found. Please log in.');
         }
 
-        const user = await api.get<User>('/users/profile/', {
+        const user = await api.get<User>(API_PATHS.USER_PROFILE, {
           headers: {
             'Authorization': `Token ${token}`,
             'Content-Type': 'application/json'

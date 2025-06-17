@@ -14,8 +14,8 @@ import {
   Link
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import axios from 'axios';
 import { ProtectedRoute } from '../components/ProtectedRoute';
+import { api } from '../api/apiClient';
 
 const BookUploadPage = () => {
   const [file, setFile] = useState<File | null>(null);
@@ -44,26 +44,17 @@ const BookUploadPage = () => {
     setErrors([]);
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/books/upload_csv/', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Token ${token}`,
-        },
-        body: formData,
-      });
+      const response = await api.post('/books/upload_csv/', formData);
 
-      const data = await response.json();
-
-      if (response.ok) {
-        if (data.message) {
-          setMessage({ type: 'success', text: data.message });
+      if (response.data) {
+        if (response.data.message) {
+          setMessage({ type: 'success', text: response.data.message });
         }
-        if (data.errors && data.errors.length > 0) {
-          setErrors(data.errors);
+        if (response.data.errors && response.data.errors.length > 0) {
+          setErrors(response.data.errors);
         }
       } else {
-        throw new Error(data.error || 'Failed to upload file');
+        throw new Error(response.data || 'Failed to upload file');
       }
     } catch (error) {
       console.error('Upload error:', error);

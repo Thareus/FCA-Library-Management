@@ -1,7 +1,6 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import { Box, Typography, CircularProgress, Alert } from '@mui/material';
-import axios from 'axios';
 import { BookInstanceHistory } from '@/types';
 import { api } from '../api/apiClient';
 
@@ -12,10 +11,10 @@ export default function BookInstanceHistoryPage() {
     const [error, setError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
-    axios
-      .get<BookInstanceHistory[]>(`${api}/books/${bookId}/book-instances/${bookInstanceId}/`)
-      .then(response => {
-        setBookInstanceHistory(response.data);
+    api
+      .get<BookInstanceHistory[]>(`/books/${bookId}/book-instances/${bookInstanceId}/`)
+      .then(data => {
+        setBookInstanceHistory(data);
       })
       .catch(error => {
         setError(error.response?.data?.error || 'Failed to load book instance history');
@@ -39,9 +38,6 @@ export default function BookInstanceHistoryPage() {
         <Box key={history.id} mb={2}>
           <Typography variant="body1" gutterBottom>
             {history.status} on {history.borrowed_date}
-          </Typography>
-          <Typography variant="body2" color="textSecondary">
-            {history.user?.email}
           </Typography>
         </Box>
       ))}

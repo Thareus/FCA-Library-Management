@@ -4,6 +4,7 @@ import { Box, Typography, Button, CircularProgress, Alert, Paper, Avatar, List, 
 import axios from 'axios';
 import { Book, UserWishlist } from '@/types';
 import { api } from '../api/apiClient';
+import { API_PATHS } from '../utils/apiPaths';
 
 export default function BookDetailPage() {
   const { id } = useParams();
@@ -20,7 +21,7 @@ export default function BookDetailPage() {
     const fetchBook = async () => {
       setLoading(true);
       try {
-        const res = await api.get<Book>(`/books/${id}/`);
+        const res = await api.get<Book>(API_PATHS.BOOK_DETAIL(id));
         setBook(res);
       } catch (err) {
         setError('Book not found');
@@ -34,7 +35,7 @@ export default function BookDetailPage() {
     const fetchWishlistsOn = async () => {
       setLoading(true);
       try {
-        const res = await api.get<UserWishlist[]>(`/books/${id}/wishlists_on/`);
+        const res = await api.get<UserWishlist[]>(API_PATHS.BOOK_WISHLISTS(id));
         setWishlistsOn(res);
       } catch (err) {
         setError('Wishlists not found');
@@ -47,7 +48,7 @@ export default function BookDetailPage() {
   const handleReturn = async () => {
     setMessage('');
     try {
-      await api.post('/books/return/', { book: id });
+      await api.post(API_PATHS.RETURN_BOOK, { book: id });
       setMessage('Book returned successfully!');
     } catch (err: any) {
       setMessage(err.response?.data?.detail || 'Could not return book');
@@ -57,7 +58,7 @@ export default function BookDetailPage() {
   const handleBorrow = async () => {
     setMessage('');
     try {
-      await api.post('/books/borrow/', { book: id });
+      await api.post(API_PATHS.BORROW_BOOK, { book: id });
       setMessage('Book borrowed successfully!');
     } catch (err: any) {
       setMessage(err.response?.data?.detail || 'Could not borrow book');
@@ -67,7 +68,7 @@ export default function BookDetailPage() {
   const handleWishlist = async () => {
     setMessage('');
     try {
-      await api.post('/books/wishlist/', { book: id });
+      await api.post(API_PATHS.WISHLIST_ADD, { book: id });
       setMessage('Book added to wishlist successfully!');
     } catch (err: any) {
       setMessage(err.response?.data?.detail || 'Could not add book to wishlist');

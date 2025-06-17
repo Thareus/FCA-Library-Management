@@ -13,9 +13,9 @@ const apiPath = (path: string): string => {
 
 export const API_PATHS = {
   // Auth
-  LOGIN: apiPath('auth/login/'),
-  LOGOUT: apiPath('auth/logout/'),
-  REGISTER: apiPath('auth/registration/'),
+  LOGIN: apiPath('users/login/'),
+  LOGOUT: apiPath('users/logout/'),
+  REGISTER: apiPath('users/register/'),
   
   // Users
   USER_PROFILE: apiPath('users/profile/'),
@@ -23,11 +23,11 @@ export const API_PATHS = {
   
   // Books
   BOOKS: apiPath('books/'),
-  BOOK_DETAIL: (id: string | number) => apiPath(`books/${id}/`),
+  BOOK_DETAIL: (id: string | number | undefined) => apiPath(`books/${id}/`),
   BORROW_BOOK: apiPath('books/borrow/'),
   RETURN_BOOK: apiPath('books/return/'),
   WISHLIST_ADD: apiPath('books/wishlist/'),
-  BOOK_WISHLISTS: (id: string | number) => apiPath(`books/${id}/wishlists_on/`),
+  BOOK_WISHLISTS: (id: string | number | undefined) => apiPath(`books/${id}/wishlists_on/`),
   
   // Search
   SEARCH: (query: string) => apiPath(`books/search/?query=${encodeURIComponent(query)}`),
