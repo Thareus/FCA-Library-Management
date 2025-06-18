@@ -73,6 +73,9 @@ const BookUploadPage = () => {
 
   return (
     <Container maxWidth="md">
+      <Button variant="contained" color="primary" sx={{ mt: 2 }} onClick={() => navigate('/books')}>
+        Back to Books
+      </Button>
       <Paper elevation={3} sx={{ p: 4, mt: 4 }}>
         <Typography variant="h4" component="h1" gutterBottom>
           Upload Books via CSV

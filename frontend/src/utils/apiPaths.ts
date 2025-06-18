@@ -25,12 +25,15 @@ export const API_PATHS = {
   BOOKS: apiPath('books/'),
   BOOKS_SEARCH: (query: string) => apiPath(`books/search/?query=${encodeURIComponent(query)}`),
   BOOK_DETAIL: (id: string | number | undefined) => apiPath(`books/${id}/`),
-
+  BOOK_CREATE_NEW_INSTANCE: (id: string | number | undefined) => apiPath(`books/${id}/create_new_copy/`),
   BOOKS_CSV_UPLOAD: apiPath('books/upload_csv/'),
   BORROW_BOOK: apiPath('books/borrow/'),
-  RETURN_BOOK: apiPath('books/return/'),
-  WISHLIST_ADD: apiPath('books/wishlist/'),
+  RETURN_BOOK: apiPath('books/return_book/'),
+  WISHLIST_ADD: (id: string | number | undefined) => apiPath(`books/${id}/wishlist/`),
   BOOK_WISHLISTS: (id: string | number | undefined) => apiPath(`books/${id}/wishlists_on/`),
+  BOOK_REPORT: apiPath('books/report/'),
+  GET_AMAZON_ID: (id: string | number | undefined) => apiPath(`books/${id}/get_amazon_id/`),
+  UPDATE_AMAZON_IDS: apiPath('books/update_amazon_ids/'),
 };
 
 export default API_PATHS;

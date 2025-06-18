@@ -18,12 +18,22 @@ export interface Book {
   book_instances: BookInstance[];
 }
 
+export enum BookStatus {
+    A = 'Available',
+    B = 'Borrowed',
+    R = 'Reserved',
+    L = 'Lost',
+    D = 'Damaged'
+}
+
 export interface BookInstance {
     id: number;
     book: Book;
+    status: string;
     created_at: string;
     updated_at: string;
     history: BookInstanceHistory[];
+    most_recent_history: BookInstanceHistory;
 }
 
 export interface BookInstanceHistory {
@@ -35,6 +45,16 @@ export interface BookInstanceHistory {
     due_date: string;
     returned_date: string;
     is_returned: boolean;
+}
+
+export interface BookReport {
+    book_title: string,
+    book_id: number,
+    bookinstance_id: number,
+    book_status: string,
+    borrower: string,
+    borrowed_date: string,
+    due_date: string,
 }
 
 export interface Notification {

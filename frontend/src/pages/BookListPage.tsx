@@ -14,6 +14,8 @@ import {
   Paper
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import UpdateIcon from '@mui/icons-material/Update';
+import ReportIcon from '@mui/icons-material/Report';
 import { useAuth } from '../hooks/useAuth';
 import {api} from '../api/apiClient';
 import { Book } from '../types';
@@ -53,21 +55,42 @@ export default function BookListPage() {
 
   return (
     <Box>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4">Books</Typography>
-        {isStaff && !isAuthLoading && (
+      <Typography variant="h4">Books</Typography>
+
+      {isStaff && !isAuthLoading && (
+        <Box>
           <Button
             variant="contained"
             color="primary"
             component={Link}
             to="/books/upload"
             startIcon={<AddIcon />}
+            sx={{ mr: 4 }}
           >
             Upload Books
           </Button>
-        )}
-      </Stack>
-      
+          <Button
+            variant="contained"
+            color="primary"
+            component={Link}
+            to="/books/report"
+            startIcon={<ReportIcon />}
+            sx={{ mr: 4 }}
+          >
+            Generate Report
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            component={Link}
+            to="/books/get_all_amazon_ids"
+            startIcon={<UpdateIcon />}
+            sx={{ mr: 4 }}
+          >
+            Get All Amazon IDs
+          </Button>
+        </Box>
+      )}
       <Paper component="form" onSubmit={handleSearch} elevation={0} sx={{ p: 2, mb: 3 }}>
         <Stack direction="row" spacing={2} alignItems="center">
           <TextField 
