@@ -10,7 +10,6 @@ import BookDetailPage from './pages/BookDetailPage';
 import UserProfile from './pages/UserProfile';
 import BookUploadPage from './pages/BookUploadPage';
 import Navbar from './components/Navbar';
-import BookInstanceHistory from './pages/BookInstanceHistory';
 import BookReport from './pages/BookReport';
 
 const theme = createTheme();
@@ -28,7 +27,6 @@ function App() {
           <Route path="/books/upload" element={<BookUploadPage />} />
           <Route path="/books/report" element={<BookReport />} />
           <Route path="/books/:id" element={<BookDetailPage />} />
-          <Route path="/books/:id/:bookInstanceId" element={<BookInstanceHistory />} />
           <Route path="/profile" element={<UserProfile />} />
           <Route path="*" element={<Navigate to="/books" />} />
         </Routes>
