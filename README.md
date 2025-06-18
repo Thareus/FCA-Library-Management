@@ -55,32 +55,6 @@ A comprehensive Library Management System built with Django (backend) and React 
    REDIS_URL=redis://localhost:6379/0
    ```
 
-5. Run migrations:
-   ```bash
-   python manage.py migrate
-   ```
-
-6. Create a superuser:
-   ```bash
-   python manage.py createsuperuser
-   ```
-
-### Frontend Setup
-1. Navigate to the frontend directory:
-   ```bash
-   cd ../frontend
-   ```
-
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-3. The `.env` file has been included in the frontend directory:
-   ```
-   VITE_API_BASE_URL=http://localhost:8000/api
-   ```
-
 ### Docker Setup
 
 ### Prerequisites
@@ -91,7 +65,8 @@ A comprehensive Library Management System built with Django (backend) and React 
 - **backend**: Django application
 - **frontend**: React development server
 - **redis**: Redis cache and message broker
-- **db**: PostgreSQL database (production)
+- **celery**: Celery worker for background tasks
+
 
 ### Building and Running with Docker
 
