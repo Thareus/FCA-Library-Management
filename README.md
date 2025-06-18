@@ -29,7 +29,7 @@ A comprehensive Library Management System built with Django (backend) and React 
 ### Backend Setup
 1. Clone the repository:
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/Thareus/FCA-Library-Management
    cd financial_conduct_authority/library
    ```
 
