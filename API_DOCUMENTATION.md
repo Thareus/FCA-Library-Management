@@ -109,6 +109,18 @@ These endpoints are provided by the `dj_rest_auth` library.
     *   `DELETE`: Removes a book from the user's wishlist.
 *   **Headers:** `Authorization: Token <your_token>`
 
+#### Wishlist Item - For User
+*   **URL:** `/api/users/wishlist/<wishlist_item_id>/get_for_user/`
+*   **Method:** `GET`
+*   **Description:** Returns all wishlist entries for the authenticated user.
+*   **Headers:** `Authorization: Token <your_token>`
+
+#### Wishlist Item - For Book
+*   **URL:** `/api/users/wishlist/<wishlist_item_id>/get_for_book/`
+*   **Method:** `GET`
+*   **Description:** Lists all users who have wishlisted the associated book.
+*   **Headers:** `Authorization: Token <your_token>`
+
 ---
 
 ## Books
@@ -140,9 +152,9 @@ These endpoints are provided by the `dj_rest_auth` library.
     *   `DELETE`: Deletes a book.
 
 #### Search
-*   **URL:** `/api/books/<book_id>/search/`
+*   **URL:** `/api/books/search/`
 *   **Method:** `GET`
-*   **Description:** Search for books through the title and authors names.
+*   **Description:** Search for books by title or author name using the `query` parameter.
 *   **Headers:** `Authorization: Token <your_token>`
 *   **Data (for GET):**
     ```json
@@ -164,9 +176,9 @@ These endpoints are provided by the `dj_rest_auth` library.
     ```
 
 #### Return
-*   **URL:** `/api/books/return/`
+*   **URL:** `/api/books/return_book/`
 *   **Method:** `POST`
-*   **Description:** Returns a book.
+*   **Description:** Marks a borrowed book as returned.
 *   **Headers:** `Authorization: Token <your_token>`
 *   **Data (for POST):**
     ```json
@@ -179,13 +191,14 @@ These endpoints are provided by the `dj_rest_auth` library.
 *   **URL:** `/api/books/upload_csv/`
 *   **Method:** `POST`
 *   **Description:** Uploads a CSV file of books.
+    Expected columns: `id,title,authors,isbn,publication year,language`.
 *   **Headers:** `Authorization: Token <your_token>`
 *   **Data (for POST):** file object
 
 #### Get Amazon ID
-*   **URL:** `/api/books/get_amazon_id/`
+*   **URL:** `/api/books/<book_id>/get_amazon_id/`
 *   **Method:** `GET`
-*   **Description:** Get the Amazon ID for a book from https://openlibrary.org/dev/docs/api/search.
+*   **Description:** Fetches an Amazon ID from the Open Library API and stores it on the specified book.
 *   **Headers:** `Authorization: Token <your_token>`
 *   **Data (for GET):**
     ```json
@@ -202,16 +215,16 @@ These endpoints are provided by the `dj_rest_auth` library.
 *   **Data (for POST):** None
 
 #### Generate Borrowed Report
-*   **URL:** `/api/books/generate_borrowed_report/`
+*   **URL:** `/api/books/report/`
 *   **Method:** `GET`
-*   **Description:** Returns a report of all borrowed books.
+*   **Description:** Lists all `BookInstance` records currently marked as borrowed.
 *   **Headers:** `Authorization: Token <your_token>`
 *   **Data (for GET):** None
 
 #### Create New Copy
-*   **URL:** `/api/books/create_new_copy/`
+*   **URL:** `/api/books/<book_id>/create_new_copy/`
 *   **Method:** `POST`
-*   **Description:** Creates a new copy (BookInstance) of a book.
+*   **Description:** Creates a new `BookInstance` entry for the selected book.
 *   **Headers:** `Authorization: Token <your_token>`
 *   **Data (for POST):**
     ```json
@@ -221,9 +234,9 @@ These endpoints are provided by the `dj_rest_auth` library.
     ```
 
 #### Add to Wishlist
-*   **URL:** `/api/books/add_to_wishlist/`
+*   **URL:** `/api/books/<book_id>/wishlist/`
 *   **Method:** `POST`
-*   **Description:** Adds a book to the user's wishlist.
+*   **Description:** Adds the specified book to the authenticated user's wishlist.
 *   **Headers:** `Authorization: Token <your_token>`
 *   **Data (for POST):**
     ```json
@@ -233,16 +246,10 @@ These endpoints are provided by the `dj_rest_auth` library.
     ```
 
 #### Wishlists On
-*   **URL:** `/api/books/wishlists_on/`
+*   **URL:** `/api/books/<book_id>/wishlists_on/`
 *   **Method:** `GET`
-*   **Description:** Returns a list of wishlists that the book appears on.
+*   **Description:** Lists all wishlist entries that include the specified book.
 *   **Headers:** `Authorization: Token <your_token>`
-*   **Data (for GET):**
-    ```json
-    {
-        "book": 1
-    }
-    ```
 
 ---
 
