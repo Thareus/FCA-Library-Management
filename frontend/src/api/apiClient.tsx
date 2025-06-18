@@ -99,7 +99,13 @@ export const api = {
     data?: D,
     config?: AxiosRequestConfig
   ): Promise<T> => {
-    const response = await apiClient.post<T>(url, data, config);
+    const axiosConfig = config || {};
+    if (data) {
+      axiosConfig.headers = axiosConfig.headers || {};
+      axiosConfig.headers['Content-Type'] = 'application/json';
+    }
+
+    const response = await apiClient.post<T>(url, data, axiosConfig);
     return response.data;
   },
   
