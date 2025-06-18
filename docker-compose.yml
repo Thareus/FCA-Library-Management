@@ -72,6 +72,22 @@ services:
     networks:
       - library-network
 
+  backend-tests:
+    container_name: library_backend_tests
+    build:
+      context: .
+      dockerfile: docker/backend/Dockerfile
+    command: ["python", "manage.py", "test", "-v", "2"]
+    volumes:
+      - ./library:/app
+    environment:
+      - DJANGO_SETTINGS_MODULE=library.settings
+      - PYTHONPATH=/app
+    depends_on:
+      - redis
+    networks:
+      - library-network
+
   frontend:
     container_name: library_frontend
     build: 
