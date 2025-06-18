@@ -72,7 +72,7 @@ class Book(models.Model):
         super().save(*args, **kwargs)
     
     def get_absolute_url(self):
-        return reverse('books:book-detail', kwargs={'slug': self.slug})
+        return reverse('books:book-detail', kwargs={'pk': self.pk})
     
 
 class BookStatus(models.TextChoices):
@@ -101,10 +101,7 @@ class BookInstance(models.Model):
     
     @property
     def is_available(self):
-        most_recent_history = self.history.first()
-        if most_recent_history:
-            return most_recent_history.status == BookStatus.AVAILABLE
-        return False
+        return self.status == BookStatus.AVAILABLE
 
     def __str__(self):
         return f"{self.book.title} - {self.status}"
