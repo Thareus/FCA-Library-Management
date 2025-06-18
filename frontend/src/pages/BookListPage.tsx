@@ -11,7 +11,8 @@ import {
   TextField, 
   CircularProgress,
   Stack,
-  Paper
+  Paper,
+  Alert
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import UpdateIcon from '@mui/icons-material/Update';
@@ -25,6 +26,7 @@ export default function BookListPage() {
   const [books, setBooks] = useState([]);
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
   const { isStaff, isLoading: isAuthLoading } = useAuth();
 
   const fetchBooks = async (search = '') => {
@@ -51,6 +53,16 @@ export default function BookListPage() {
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     fetchBooks(query);
+  };
+
+  const handleUpdateAmazonIds = async () => {
+    setMessage('');
+    try {
+      await api.post(API_PATHS.UPDATE_AMAZON_IDS);
+      setMessage('Amazon IDs updated successfully!');
+    } catch (err: any) {
+      setMessage(err.response?.data?.detail || 'Failed to update Amazon IDs');
+    }
   };
 
   return (
@@ -82,14 +94,18 @@ export default function BookListPage() {
           <Button
             variant="contained"
             color="primary"
-            component={Link}
-            to="/books/get_all_amazon_ids"
+            onClick={handleUpdateAmazonIds}
             startIcon={<UpdateIcon />}
             sx={{ mr: 4 }}
           >
             Get All Amazon IDs
           </Button>
         </Box>
+      )}
+      {message && (
+        <Alert sx={{ mt: 2 }} severity={message.includes('success') ? 'success' : 'error'}>
+          {message}
+        </Alert>
       )}
       <Paper component="form" onSubmit={handleSearch} elevation={0} sx={{ p: 2, mb: 3 }}>
         <Stack direction="row" spacing={2} alignItems="center">
