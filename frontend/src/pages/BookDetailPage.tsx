@@ -178,7 +178,7 @@ export default function BookDetailPage() {
             {wishlists_on?.map((wishlist: UserWishlist) => (
             <List>
               <ListItem>
-                <ListItemText primary={wishlist.user.username} />
+                <ListItemText primary="User:" secondary={wishlist.username} />
                 <ListItemText primary="Wishlisted On:" secondary={new Intl.DateTimeFormat('en-GB', {dateStyle: 'long', timeStyle: 'short'}).format(new Date(wishlist.created_at))} />
               </ListItem>
             </List>

@@ -44,7 +44,7 @@ class CustomUser(AbstractUser):
             )            
             # Log the email sending
             logger.info(f"Sent wishlist email to {self.email}")
-            
+
         except Exception as e:
             logger.error(
                 f"Failed to send wishlist email to {self.email}: {str(e)}",

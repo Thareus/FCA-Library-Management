@@ -20,10 +20,7 @@ export default function LoginPage() {
     } catch (error: any) {
       let errorMessage = 'Login failed';
       if (error.response) {
-        errorMessage = error.response.data?.message || 
-                     error.response.data?.detail || 
-                     error.response.statusText || 
-                     'Request failed';
+        errorMessage = 'Request failed';
         console.error('Response error:', error.response.data);
       } else if (error.request) {
         errorMessage = 'No response from server. Please try again.';

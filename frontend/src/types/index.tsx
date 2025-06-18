@@ -69,4 +69,5 @@ export interface UserWishlist {
     user: User;
     book: Book;
     created_at: string;
+    username: string;
 }

@@ -118,5 +118,10 @@ class UserWishlistSerializer(serializers.ModelSerializer):
     """Serializer for the Wishlist model."""
     class Meta:
         model = UserWishlist
-        fields = ['id', 'book', 'user', 'created_at']
+        fields = ['id', 'book', 'user', 'created_at', 'username']
         read_only_fields = ['created_at']
+    
+    username = serializers.SerializerMethodField(read_only=True)
+    
+    def get_username(self, obj):
+        return obj.user.username

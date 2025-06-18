@@ -317,7 +317,7 @@ class BookViewSet(viewsets.ModelViewSet):
         """
         try:
             book = self.get_object()
-            wishlists = UserWishlist.objects.filter(book=book).select_related('user')
+            wishlists = UserWishlist.objects.filter(book=book).prefetch_related('user')
             serializer = UserWishlistSerializer(wishlists, many=True)
             return Response(serializer.data)
         except Exception as e:
