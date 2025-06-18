@@ -8,14 +8,13 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import generics
 
-from .models import CustomUser, UserWishlist, UserNotification
+from .models import CustomUser, UserWishlist
 from .serializers import (
     UserSerializer,
     UserProfileSerializer, 
     UserRegistrationSerializer,
     CustomTokenSerializer,
     UserWishlistSerializer,
-    UserNotificationSerializer
 )
 
 class UserRegistrationView(generics.CreateAPIView):
@@ -171,13 +170,3 @@ class UserWishlistViewSet(viewsets.ModelViewSet):
                 {'error': 'Error retrieving wishlists', 'detail': str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-
-class UserNotificationViewSet(viewsets.ReadOnlyModelViewSet):
-    """
-    API endpoint for viewing book notifications.
-    """
-    serializer_class = UserNotificationSerializer
-    permission_classes = [permissions.IsAuthenticated]
-    
-    def get_queryset(self):
-        return UserNotification.objects.filter(user=self.request.user)

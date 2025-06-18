@@ -2,6 +2,10 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
+from django.core.mail import send_mail
+import logging
+
+logger = logging.getLogger(__name__)
 
 class CustomUser(AbstractUser):
     class Meta:
@@ -20,6 +24,32 @@ class CustomUser(AbstractUser):
     
     def __str__(self):
         return self.username
+
+    def send_wishlist_email(self, book):
+        """Send an email to the user when a book they have on their wishlist becomes available."""
+        try:
+            # Create the email message
+            subject = 'Your wishlist book is available!'
+            message = f"Hello {self.username},\n\nYour wishlist book {book.title} is now available for borrowing.\n\nBest regards,\nLibrary Team"
+            from_email = 'library@example.com'
+            recipient_list = [self.email]
+            
+            # Send the email
+            send_mail(
+                subject,
+                message,
+                from_email,
+                recipient_list,
+                fail_silently=False,
+            )            
+            # Log the email sending
+            logger.info(f"Sent wishlist email to {self.email}")
+            
+        except Exception as e:
+            logger.error(
+                f"Failed to send wishlist email to {self.email}: {str(e)}",
+                exc_info=True
+            )
             
 
 class UserWishlist(models.Model):
@@ -47,39 +77,3 @@ class UserWishlist(models.Model):
     
     # Metadata
     created_at = models.DateTimeField(_('created at'), auto_now_add=True)
-
-class UserNotification(models.Model):
-    """Model to track notifications for when a book becomes available."""
-    class Meta:
-        verbose_name = _('user notification')
-        verbose_name_plural = _('user notifications')
-        unique_together = ('user', 'book')
-        ordering = ['-created_at']
-        db_table = 'user_notifications'
-        default_related_name = 'notifications'
-
-    message = models.CharField(max_length=255)
-    user = models.ForeignKey(
-        'users.CustomUser',
-        on_delete=models.CASCADE,
-        related_name='notifications',
-        verbose_name=_('user')
-    )
-    book = models.ForeignKey(
-        'books.Book',
-        on_delete=models.CASCADE,
-        related_name='notifications',
-        verbose_name=_('book')
-    )
-    created_at = models.DateTimeField(_('created at'), auto_now_add=True)
-    notified = models.BooleanField(_('notification sent'), default=False)
-    notified_at = models.DateTimeField(_('notification sent at'), null=True, blank=True)
-
-    def __str__(self):
-        return f"Notification for {self.user.email} - {self.book.title}"
-    
-    def mark_as_notified(self):
-        """Mark this notification as sent."""
-        self.notified = True
-        self.notified_at = timezone.now()
-        self.save(update_fields=['notified', 'notified_at'])

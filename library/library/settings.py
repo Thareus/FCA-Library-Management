@@ -164,6 +164,44 @@ ACCOUNT_LOGIN_METHODS = {'email'}
 ACCOUNT_SIGNUP_FIELDS = ['email*', 'username', 'password1*', 'password2*']
 ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
 
+# Logging Configuration
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'books': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        '': {  # Root logger
+            'handlers': ['console'],
+            'level': 'INFO',
+        },
+    },
+}
 
 # Media files (for book covers)
 MEDIA_URL = '/media/'
@@ -222,3 +260,5 @@ CELERY_TIMEZONE = TIME_ZONE
 # Email settings for Celery
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # For development
 # EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'   # For production
+
+AWS_ASSOCIATE_ID = os.environ.get('AWS_ASSOCIATE_ID', 'random-associate')

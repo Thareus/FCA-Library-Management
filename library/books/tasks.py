@@ -7,6 +7,8 @@ from django.core.files.storage import default_storage
 from django.core.mail import send_mail
 from django.conf import settings
 from .serializers import BookImportSerializer
+from .models import Book
+import requests
 
 logger = logging.getLogger(__name__)
 
@@ -178,3 +180,21 @@ def send_processing_completion_email(user_email, file_path, successes, errors, t
     except Exception as e:
         logger.error(f"Failed to send completion email to {user_email}: {str(e)}")
         raise
+
+@shared_task
+def process_amazon_ids_task():
+    """For all books without an amazon_id, query the OpenLibraryAPI https://openlibrary.org/dev/docs/api/search for the id"""
+    books = Book.objects.filter(amazon_id__isnull=True)
+    for book in books:
+        try:
+            response = requests.get(f'https://openlibrary.org/search.json?title={urllib.parse.quote(book.title)}&fields=isbn')
+            data = response.json()
+            if len(data.get('docs', [])) > 0:
+                isbn = data['docs'][0].get('isbn')[0]
+                amazon_id = f"http://www.amazon.co.uk/dp/{isbn}/ref=nosim?tag={settings.AWS_ASSOCIATE_ID}"
+                book.amazon_id = amazon_id
+                book.isbn = isbn
+                book.save()
+        except Exception as e:
+            logger.error(f"Failed to get Amazon ID for book {book.id}: {str(e)}")
+    

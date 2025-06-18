@@ -4,7 +4,6 @@ from . import views
 
 router = DefaultRouter()
 router.register(r'wishlist', views.UserWishlistViewSet, basename='wishlist')
-router.register(r'notifications', views.UserNotificationViewSet, basename='notification')
 
 app_name = 'users'
 

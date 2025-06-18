@@ -3,6 +3,9 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.utils.text import slugify
 from django.urls import reverse
+import logging
+
+logger = logging.getLogger(__name__)
 
 class Author(models.Model):
     class Meta:
@@ -52,6 +55,14 @@ class Book(models.Model):
     updated_at = models.DateTimeField(_('updated at'), auto_now=True)
     slug = models.SlugField(_('slug'), max_length=255, unique=True, blank=True)
 
+    @property
+    def total_copies(self):
+        return self.book_instances.count()
+
+    @property
+    def available_copies(self):
+        return self.book_instances.filter(status='A').count()
+
     def __str__(self):
         return f"{self.title}"
     
@@ -90,7 +101,7 @@ class BookInstance(models.Model):
     
     @property
     def is_available(self):
-        most_recent_history = self.history.last()
+        most_recent_history = self.history.first()
         if most_recent_history:
             return most_recent_history.status == BookStatus.AVAILABLE
         return False
@@ -104,8 +115,10 @@ class BookInstanceHistory(models.Model):
         verbose_name_plural = _('book instance histories')
         default_related_name = 'book_instance_history'
         db_table = 'book_instance_history'
-        ordering = ['-borrowed_date']
-    
+        ordering = [
+            models.F('borrowed_date').desc(nulls_last=True)
+        ]
+        
     book_instance = models.ForeignKey(
         'books.BookInstance',
         on_delete=models.CASCADE,
@@ -122,23 +135,14 @@ class BookInstanceHistory(models.Model):
         'users.CustomUser',
         on_delete=models.CASCADE,
         related_name='borrowed_history',
-        verbose_name=_('user')
+        verbose_name=_('user'),
+        null=True,
+        blank=True
     )
-    borrowed_date = models.DateTimeField(_('borrowed date'), auto_now_add=True)
-    due_date = models.DateTimeField(_('due date'))
+    borrowed_date = models.DateTimeField(_('borrowed date'), null=True, blank=True)
+    due_date = models.DateTimeField(_('due date'), null=True, blank=True)
     returned_date = models.DateTimeField(_('returned date'), null=True, blank=True)
-    is_returned = models.BooleanField(_('is returned'), default=False)
-
+    is_returned = models.BooleanField(_('is returned'), default=True)
     
     def __str__(self):
         return f"{self.book_instance.book.title} - {self.status}"
-    
-    def save(self, *args, **kwargs):
-        if not self.pk:
-            self.book_instance.status = BookStatus.AVAILABLE
-            self.book_instance.save()
-        elif self.is_returned and not self.returned_date:
-            self.returned_date = timezone.now()
-            self.book_instance.status = BookStatus.AVAILABLE
-            self.book_instance.save()
-        super().save(*args, **kwargs)

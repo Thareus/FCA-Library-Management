@@ -1,24 +1,28 @@
-import csv
-from rest_framework import serializers, viewsets, status, permissions, filters
-from rest_framework.views import APIView
+import requests
+import urllib
+from django.conf import settings
+from rest_framework import viewsets, status, permissions, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from django.core.files.storage import default_storage
-from django.db import transaction
-from django.db.models import Q, Count
+from django.db.models import Q, OuterRef, Subquery
+from django.utils import timezone
+from datetime import timedelta
 from django_filters.rest_framework import DjangoFilterBackend
-import pandas as pd
+import logging
 
-from .models import Author, Book, BookInstance
+from .models import Author, Book, BookStatus, BookInstance, BookInstanceHistory
 from .serializers import (
     BookSerializer, BookSearchSerializer, BookBorrowSerializer,
-    AmazonIDUpdateSerializer, AuthorSerializer
+    AuthorSerializer
 )
 from .tasks import process_csv_task
 
 from users.models import UserWishlist
 from users.serializers import UserWishlistSerializer
+
+logger = logging.getLogger(__name__)
 
 class AuthorViewSet(viewsets.ModelViewSet):
     """
@@ -84,33 +88,138 @@ class BookViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(books, many=True)
         return Response(serializer.data)
     
-    @action(detail=False, methods=['post'], parser_classes=[MultiPartParser, FormParser])
+    @action(detail=False, methods=['post'], parser_classes=[JSONParser, FormParser, MultiPartParser])
     def borrow(self, request):
         """
         Borrow a book.
         """
-        serializer = BookBorrowSerializer(data=request.data)
-        if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        logger.info(f"Borrow request received. Data: {request.data}")
         
-        book = serializer.validated_data['book']
-        user = request.user
+        try:
+            serializer = BookBorrowSerializer(data=request.data) # Operates on BookInstance
+            if not serializer.is_valid():
+                logger.error(f"Validation error in borrow request: {serializer.errors}")
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
+            book_instance = serializer.validated_data['book_instance']
+            logger.info(f"Processing borrow request for book instance: {book_instance.id}")
+            
+            # Check if book is already borrowed
+            if book_instance.status == BookStatus.BORROWED:
+                logger.warning(f"Book instance {book_instance.id} is already borrowed")
+                return Response(
+                    {'error': 'This book is already borrowed'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Update Book Instance
+            book_instance.status = BookStatus.BORROWED
+            
+            try:
+                # Create new entry in BookInstanceHistory
+                history = BookInstanceHistory(
+                    book_instance=book_instance,
+                    status=BookStatus.BORROWED,
+                    user=request.user,
+                    borrowed_date=timezone.now(),
+                    due_date=timezone.now() + timedelta(days=14),
+                    is_returned=False
+                )
+                history.save()
+                book_instance.save()
+                logger.info(f"Successfully updated book instance {book_instance.id} and created history entry")
+            except Exception as e:
+                logger.error(
+                    f"Error updating book instance {book_instance.id} or creating history: {str(e)}",
+                    exc_info=True
+                )
+                return Response(
+                    {'error': 'Failed to update book status'}, 
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+            
+            # Delete UserWishlist instance if it exists
+            try:
+                deleted_count, _ = UserWishlist.objects.filter(
+                    book=book_instance.book, 
+                    user=request.user
+                ).delete()
+                if deleted_count > 0:
+                    logger.info(f"Removed {deleted_count} items from user's wishlist")
+            except Exception as e:
+                logger.error(
+                    f"Error removing book from user's wishlist: {str(e)}",
+                    exc_info=True
+                )
+                # Don't fail the request if wishlist cleanup fails
+            
+            logger.info(f"Successfully processed borrow request for book instance {book_instance.id}")
+            return Response(
+                {'message': 'Book borrowed successfully!'}, 
+                status=status.HTTP_200_OK
+            )
+            
+        except Exception as e:
+            logger.error(
+                f"Unexpected error in borrow endpoint: {str(e)}",
+                exc_info=True
+            )
+            return Response(
+                {'error': 'An unexpected error occurred'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
     
-        # Get Available Book Instances
-        book_instances = BookInstance.objects.filter(book=book, status='A')
+    @action(detail=False, methods=['post'], parser_classes=[JSONParser, FormParser, MultiPartParser])
+    def return_book(self, request):
+        """
+        Return a book.
+        """
+        try:
+            
+            serializer = BookBorrowSerializer(data=request.data) # Operates on BookInstance
+            if not serializer.is_valid():
+                logger.error(f"Validation error in borrow request: {serializer.errors}")
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        if not book_instances.exists():
-            return Response({'error': 'Book is not available for borrowing'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        # Borrow Book Instance
-        book_instance = book_instances.first()
-        book_instance.status = 'B'
-        book_instance.borrower = user
-        book_instance.save()
+            book_instance = serializer.validated_data['book_instance']
 
-        # Delete UserWishlist instance
-        UserWishlist.objects.filter(book=book, user=user).delete()
-        return Response({'message': 'Book borrowed successfully!'}, status=status.HTTP_200_OK)
+            book = book_instance.book
+            available_copies = book.available_copies
+
+            book_instance.status = BookStatus.AVAILABLE
+            book_instance.save()
+
+            # Update Book Instance History
+            try:
+                history = BookInstanceHistory.objects.create(
+                    book_instance=book_instance,
+                    status=BookStatus.AVAILABLE,
+                    user=request.user,
+                    returned_date=timezone.now(),
+                    is_returned=True
+                )
+                history.save()
+            except Exception as e:
+                logger.error(
+                    f"Error updating book instance history: {str(e)}",
+                    exc_info=True
+                )
+                return Response(
+                    {'error': 'Failed to update book instance history'}, 
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+            
+            # If available copies was 0, and is now 1, send email to next user on wishlist
+            if available_copies == 0 and book.available_copies == 1:
+                UserWishlist.objects.filter(book=book).first().user.send_wishlist_email(book)
+
+            return Response({'message': 'Book returned successfully!'}, status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(
+                f"Error returning book: {str(e)}",
+                exc_info=True
+            )
+            return Response({'error': 'An unexpected error occurred'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @action(detail=False, methods=['post'], parser_classes=[MultiPartParser, FormParser])
     def upload_csv(self, request):
@@ -129,6 +238,73 @@ class BookViewSet(viewsets.ModelViewSet):
         process_csv_task.delay(path, 'test@email.com')
         return Response({"message": "File successfully uploaded. You will receive an email when this file has finished processing."}, status=202)
     
+    @action(detail=False, methods=['post'], permission_classes=[permissions.IsAdminUser])
+    def update_amazon_ids(self, request):
+        """
+        Update Amazon IDs for books in bulk.
+        """
+        task_id = process_amazon_ids_task.delay()
+        return Response({'task_id': task_id}, status=status.HTTP_202_ACCEPTED)
+    
+    @action(detail=False, methods=['get'], url_path='report', url_name='generate_borrowed_report', permission_classes=[permissions.IsAdminUser])
+    def generate_borrowed_report(self, request):
+        """
+        Generate a report on all bookinstances that are currently borrowed.
+        """
+        borrowed_bookinstances = BookInstance.objects.filter(status=BookStatus.BORROWED).select_related('book')
+        
+        report = []
+        for bookinstance in borrowed_bookinstances:
+            history = bookinstance.history.order_by('-borrowed_date').first()
+            report.append({
+                'book_title': bookinstance.book.title,
+                'book_id': bookinstance.book.id,
+                'bookinstance_id': bookinstance.id,
+                'book_status': bookinstance.status,
+                'borrower': history.user.username,
+                'borrowed_date': history.borrowed_date,
+                'due_date': history.due_date,
+            })
+        
+        return Response({
+            'message': 'Report generated',
+            'report': report
+        })
+
+    @action(detail=True, methods=['post'])
+    def create_new_copy(self, request, pk=None):
+        """
+        Create a new copy of a book.
+        """
+        try:
+            book = self.get_object()
+            new_copy = BookInstance.objects.create(book=book, status='A')
+            return Response({"message": "New copy created successfully!"}, status=201)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    @action(detail=True, methods=['post'], url_path='wishlist', url_name='add_to_wishlist')
+    def add_to_wishlist(self, request, pk=None):
+        """
+        Add a book to the user's wishlist.
+        """
+        user = request.user.id
+        book = self.get_object().id
+        serializer = UserWishlistSerializer(
+            data={
+                'user': user,
+                'book': book
+            }
+        )
+        if UserWishlist.objects.filter(user=user, book=book).exists():
+            return Response({'error': 'This book is already in your wishlist.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'message': 'Book added to wishlist successfully!'}, status=status.HTTP_200_OK)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
     @action(detail=True, methods=['get'])
     def wishlists_on(self, request, pk=None):
         """
@@ -150,26 +326,29 @@ class BookViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
     
-    @action(detail=False, methods=['post'], permission_classes=[permissions.IsAdminUser])
-    def update_amazon_ids(self, request):
+    @action(detail=True, methods=['get'], url_path='get_amazon_id', url_name='get_amazon_id')
+    def get_amazon_id(self, request, pk=None):
         """
-        Update Amazon IDs for books in bulk.
+        Get the Amazon ID for a book from https://openlibrary.org/dev/docs/api/search.
         """
-        serializer = AmazonIDUpdateSerializer(data=request.data, many=True)
-        if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
-        updated_books = []
-        for item in serializer.validated_data:
-            try:
-                book = Book.objects.get(id=item['book_id'])
-                book.amazon_id = item['amazon_id']
+        try:
+            book = self.get_object()
+            response = requests.get(f'https://openlibrary.org/search.json?title={urllib.parse.quote(book.title)}&fields=isbn')
+
+            if response.status_code != 200:
+                return Response({'error': 'Failed to get Amazon ID'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            data = response.json()
+            if len(data.get('docs', [])) > 0:
+                isbn = data['docs'][0].get('isbn')[0]
+                amazon_id = f"http://www.amazon.co.uk/dp/{isbn}/ref=nosim?tag={settings.AWS_ASSOCIATE_ID}"
+                book.amazon_id = amazon_id
+                book.isbn = isbn
                 book.save()
-                updated_books.append(book)
-            except Book.DoesNotExist:
-                continue
-        
-        return Response({
-            'message': f'Successfully updated {len(updated_books)} books',
-            'updated_books': BookSerializer(updated_books, many=True).data
-        })
+                return Response({'amazon_id': amazon_id}, status=status.HTTP_200_OK)
+            return Response({'error': 'Failed to get Amazon ID'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except Exception as e:
+            return Response(
+                {'error': 'Error retrieving Amazon ID', 'detail': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

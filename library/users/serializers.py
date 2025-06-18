@@ -5,7 +5,7 @@ from django.contrib.auth.password_validation import validate_password
 from books.models import Book
 from books.serializers import BookSerializer
 
-from .models import UserWishlist, UserNotification
+from .models import UserWishlist
 
 User = get_user_model()
 
@@ -116,35 +116,9 @@ class CustomTokenSerializer(serializers.Serializer):
             msg = 'Must include "email" and "password".'
             raise serializers.ValidationError(msg, code='authorization')
 
-class UserNotificationSerializer(serializers.ModelSerializer):
-    """Serializer for the Notification model."""
-    book = BookSerializer(read_only=True)
-    user = UserSerializer(read_only=True)
-    
-    class Meta:
-        model = UserNotification
-        fields = ['id', 'book', 'user', 'created_at', 'notified', 'notified_at']
-        read_only_fields = ['user', 'created_at', 'notified', 'notified_at']
-
 class UserWishlistSerializer(serializers.ModelSerializer):
     """Serializer for the Wishlist model."""
-    book = BookSerializer(read_only=True)
-    book_id = serializers.PrimaryKeyRelatedField(
-        queryset=Book.objects.all(),
-        source='book',
-        write_only=True
-    )
-    
     class Meta:
         model = UserWishlist
-        fields = ['id', 'book', 'book_id', 'created_at']
-        read_only_fields = ['user', 'created_at']
-
-    def validate(self, attrs):
-        user = self.context['request'].user
-        book = attrs.get('book')
-        
-        if UserWishlist.objects.filter(user=user, book=book).exists():
-            raise serializers.ValidationError("This book is already in your wishlist.")
-        
-        return attrs
+        fields = ['id', 'book', 'user', 'created_at']
+        read_only_fields = ['created_at']

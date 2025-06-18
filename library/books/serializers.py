@@ -135,7 +135,6 @@ class BookImportSerializer(BookSerializer):
     authors = serializers.CharField(write_only=True)  # Accepts a CSV string
 
     def create(self, validated_data):
-        logger.debug("CREATE BOOK")
         authors_string = validated_data.pop('authors', '')
         
         with transaction.atomic():
@@ -163,13 +162,16 @@ class BookImportSerializer(BookSerializer):
                     'status': 'A'
                 })
                 if book_instance_serializer.is_valid():
-                    logger.debug("BOOK INSTANCE VALID")
-                    book_instance_serializer.save()
-                else:
-                    logger.warning(
-                        "BOOK INSTANCE INVALID %s",
-                        book_instance_serializer.errors
+                    book_instance = book_instance_serializer.save()
+                # Create BookInstanceHistory for the new instance, status 'A'
+                if book_instance and not book_instance.history.exists():
+                    BookInstanceHistory.objects.create(
+                        book_instance=book_instance,
+                        status='A'
                     )
+                else:
+                    logger.warning(book_instance_serializer.errors)
+                    
         return book
     
     def update(self, instance, validated_data):
@@ -193,13 +195,16 @@ class BookImportSerializer(BookSerializer):
                     'status': 'A'
                 })
                 if book_instance_serializer.is_valid():
-                    logger.debug("BOOK INSTANCE VALID")
-                    book_instance_serializer.save()
-                else:
-                    logger.warning(
-                        "BOOK INSTANCE INVALID %s",
-                        book_instance_serializer.errors
+                    book_instance = book_instance_serializer.save()
+                # Create BookInstanceHistory for the new instance, status 'A'
+                if book_instance and not book_instance.history.exists():
+                    BookInstanceHistory.objects.create(
+                        book_instance=book_instance,
+                        status='A',
+                        is_returned=True
                     )
+                else:
+                    logger.warning(book_instance_serializer.errors)
         return instance
     
     def _process_authors(self, book, author_value):
@@ -229,7 +234,7 @@ class BookImportSerializer(BookSerializer):
             book.authors.add(author)
 
 class BookBorrowSerializer(serializers.Serializer):
-    book = serializers.PrimaryKeyRelatedField(queryset=Book.objects.all())
+    book_instance = serializers.PrimaryKeyRelatedField(queryset=BookInstance.objects.all())
 
 class BookWishlistSerializer(serializers.Serializer):
     book = serializers.PrimaryKeyRelatedField(queryset=Book.objects.all())
@@ -249,7 +254,7 @@ class BookInstanceSerializer(serializers.ModelSerializer):
             'updated_at',
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
-    
+
     def create(self, validated_data):
         with transaction.atomic():
             instance = BookInstance.objects.create(**validated_data)

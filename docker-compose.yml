@@ -24,9 +24,9 @@ services:
     # otherwise default to Gunicorn defined in the Dockerfile
     command: >-
       sh -c "if [ \"$DJANGO_DEBUG\" = 'True' ]; then \
-                python manage.py runserver 0.0.0.0:8000; \
+                python -u manage.py runserver 0.0.0.0:8000; \
               else \
-                gunicorn --bind 0.0.0.0:8000 library.wsgi:application; \
+                gunicorn --bind 0.0.0.0:8000 --access-logfile - --error-logfile - --log-level debug library.wsgi:application; \
               fi"
     volumes:
       - ./library:/app
@@ -40,6 +40,14 @@ services:
       - ALLOWED_HOSTS=localhost,127.0.0.1,backend
       - DJANGO_DEBUG=${DJANGO_DEBUG:-False}
       - DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,backend
+      - PYTHONUNBUFFERED=1
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    stdin_open: true
+    tty: true
     depends_on:
       - redis
     networks:
@@ -69,7 +77,7 @@ services:
     build: 
       context: .
       dockerfile: docker/frontend/Dockerfile
-      target: development  # Use development stage for hot-reloading
+      target: development
     ports:
       - "5173:5173"
     volumes:
