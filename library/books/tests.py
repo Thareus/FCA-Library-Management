@@ -1,5 +1,6 @@
 from django.test import TestCase
 from .models import Author, Book, BookInstance, BookStatus
+from django.urls import reverse
 
 
 class AuthorModelTests(TestCase):
@@ -8,6 +9,10 @@ class AuthorModelTests(TestCase):
     def test_slug_is_generated(self):
         author = Author.objects.create(given_names="John", surname="Doe")
         self.assertTrue(author.slug)
+
+    def test_str_representation(self):
+        author = Author.objects.create(given_names="Emily", surname="Bronte")
+        self.assertEqual(str(author), "Emily Bronte")
 
 
 class BookModelTests(TestCase):
@@ -49,14 +54,42 @@ class BookModelAdditionalTests(TestCase):
     def setUp(self):
         self.author = Author.objects.create(given_names="Mark", surname="Twain")
 
-    def test_get_absolute_url_contains_slug(self):
+    def test_get_absolute_url_contains_id(self):
         book = Book.objects.create(
             title="Adventures",
             library_id="LIB0000003",
             isbn="1234567890125",
         )
         book.authors.add(self.author)
-        self.assertIn(book.slug, book.get_absolute_url())
+        self.assertIn(str(book.id), book.get_absolute_url())
+
+    def test_get_absolute_url_missing_id(self):
+        book = Book(title="Draft", library_id="LIB0000009", isbn="1234567890999")
+        # Not saved, so no id
+        with self.assertRaises(Exception):
+            book.get_absolute_url()
+
+class BookInstanceModelTests(TestCase):
+    """Tests for the BookInstance model."""
+
+    def setUp(self):
+        self.author = Author.objects.create(given_names="Agatha", surname="Christie")
+        self.book = Book.objects.create(title="Poirot", library_id="LIB0000010", isbn="1234567890110")
+        self.book.authors.add(self.author)
+
+    def test_instance_creation_and_str(self):
+        instance = BookInstance.objects.create(book=self.book, status=BookStatus.AVAILABLE)
+        self.assertEqual(str(instance), f"{self.book.title} - {BookStatus.AVAILABLE}")
+
+    def test_is_available_property(self):
+        instance = BookInstance.objects.create(book=self.book, status=BookStatus.AVAILABLE)
+        instance2 = BookInstance.objects.create(book=self.book, status=BookStatus.BORROWED)
+        self.assertTrue(instance.is_available)
+        self.assertFalse(instance2.is_available)
+
+    def test_status_choices(self):
+        self.assertIn(BookStatus.AVAILABLE, BookStatus.values)
+        self.assertIn(BookStatus.BORROWED, BookStatus.values)
 
 class BookSerializerValidationTests(TestCase):
     """Tests for BookSerializer field validations."""
