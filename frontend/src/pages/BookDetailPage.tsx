@@ -155,7 +155,7 @@ export default function BookDetailPage() {
           <List>
             <ListItem>
               <ListItemText primary="Copies" />
-              <Button variant="contained" color="primary" sx={{ mt: 2 }} onClick={() => handleCreateNewCopy}>
+              <Button variant="contained" color="primary" sx={{ mt: 2 }} onClick={handleCreateNewCopy}>
                 Add new copy
               </Button>
             </ListItem>
