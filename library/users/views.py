@@ -98,7 +98,7 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
     permission_classes = [IsAuthenticated]
     
     def get_object(self):
-        user = CustomUser.objects.prefetch_related('wishlist', 'notifications').get(username=self.request.user.username)
+        user = CustomUser.objects.prefetch_related('wishlist').get(username=self.request.user.username)
         
         return user
 
