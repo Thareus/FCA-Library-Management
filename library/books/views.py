@@ -17,7 +17,7 @@ from .serializers import (
     BookSerializer, BookSearchSerializer, BookBorrowSerializer,
     AuthorSerializer
 )
-from .tasks import process_csv_task
+from .tasks import process_csv_task, process_amazon_ids_task
 
 from users.models import UserWishlist
 from users.serializers import UserWishlistSerializer
