@@ -73,6 +73,7 @@ services:
       - library-network
 
   backend-tests:
+    profiles: ["test"]
     container_name: library_backend_tests
     build:
       context: .
@@ -111,19 +112,19 @@ services:
     networks:
       - library-network
 
-  # Production frontend service (uncomment when needed)
-  # frontend-prod:
-  #   container_name: library_frontend_prod
-  #   build:
-  #     context: .
-  #     dockerfile: docker/frontend/Dockerfile
-  #     target: production
-  #   ports:
-  #     - "80:80"
-  #   depends_on:
-  #     - backend
-  #   networks:
-  #     - library-network
+  frontend-prod:
+    profiles: ["prod"]
+    container_name: library_frontend_prod
+    build:
+      context: .
+      dockerfile: docker/frontend/Dockerfile
+      target: production
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - library-network
 
 networks:
   library-network:
