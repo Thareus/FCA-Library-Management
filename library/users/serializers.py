@@ -26,10 +26,14 @@ class UserProfileSerializer(serializers.ModelSerializer):
     """
     class Meta:
         model = User
-        fields = ('id', 'email', 'username', 'wishlist')
+        fields = ('id', 'email', 'username', 'wishlist_data')
         read_only_fields = ('id',)
     
-    wishlist = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
+    wishlist_data = serializers.SerializerMethodField()
+
+    def get_wishlist_data(self, obj):
+        return UserWishlistSerializer(obj.wishlist, many=True).data
+
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
     """
@@ -118,10 +122,14 @@ class UserWishlistSerializer(serializers.ModelSerializer):
     """Serializer for the Wishlist model."""
     class Meta:
         model = UserWishlist
-        fields = ['id', 'book', 'user', 'created_at', 'username']
+        fields = ['id', 'book', 'user', 'created_at', 'username', 'book_title']
         read_only_fields = ['created_at']
     
     username = serializers.SerializerMethodField(read_only=True)
+    book_title = serializers.SerializerMethodField(read_only=True)
     
     def get_username(self, obj):
         return obj.user.username
+    
+    def get_book_title(self, obj):
+        return obj.book.title

@@ -103,13 +103,13 @@ export default function UserProfile() {
           My Wishlist
         </Typography>
         <Divider sx={{ mb: 2 }} />
-        {user.wishlist.length > 0 ? (
+        {user.wishlist_data.length > 0 ? (
           <List>
-            {user.wishlist.map((book) => (
+            {user.wishlist_data.map((wishlist) => (
               <ListItem 
-                key={book.id} 
+                key={wishlist.id} 
                 component={Link} 
-                to={`/books/${book.id}`}
+                to={`/books/${wishlist.book}`}
                 sx={{
                   textDecoration: 'none',
                   color: 'inherit',
@@ -118,10 +118,14 @@ export default function UserProfile() {
                   },
                 }}
               >
-                <ListItemText 
-                  primary={book.title} 
-                  secondary={book.authors.join(', ')}
+                <ListItemText
+                  primary={wishlist.book_title} 
                 />
+                <Link to={`/books/${wishlist.book}`}>
+                  <Button variant="contained" color="primary">
+                    View Book
+                  </Button>
+                </Link>
               </ListItem>
             ))}
           </List>

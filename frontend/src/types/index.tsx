@@ -61,13 +61,14 @@ export interface User {
   id: number;
   username: string;
   email: string;
-  wishlist: Book[];
+  wishlist_data: UserWishlist[];
 }
 
 export interface UserWishlist {
     id: number;
     user: User;
+    username: string;
+    book_title: string;
     book: Book;
     created_at: string;
-    username: string;
 }
