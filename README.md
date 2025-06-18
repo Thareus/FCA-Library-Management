@@ -14,15 +14,15 @@ A comprehensive Library Management System built with Django (backend) and React 
 ## Technology Stack
 - **Backend**: Django 5.2.3, Django REST Framework
 - **Frontend**: React, TypeScript, Vite
-- **Database**: PostgreSQL (production), SQLite (development)
+- **Database**: SQLite (development)
 - **Task Queue**: Celery with Redis
 - **Containerization**: Docker
 
 ## Prerequisites
 - Python 3.10+
 - Node.js 16+
-- Docker and Docker Compose (optional)
-- Redis (for task queue)
+- Docker and Docker Compose
+- Redis & Celery for tasks
 
 ## Setup Instructions
 
@@ -152,11 +152,6 @@ POSTGRES_PORT=5432
 # Redis
 REDIS_URL=redis://redis:6379/0
 ```
-
-### Volumes
-- Database data is persisted in `postgres_data` volume
-- Redis data is persisted in `redis_data` volume
-- Frontend node_modules are cached in `node_modules` volume
 
 ## Running the Application
 1. Start the backend server:
