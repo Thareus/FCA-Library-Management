@@ -51,15 +51,15 @@ const BookUploadPage = () => {
         },
       });
 
-      if (response.data) {
-        if (response.data.message) {
-          setMessage({ type: 'success', text: response.data.message });
+      if (response) {
+        if (response.message) {
+          setMessage({ type: 'success', text: response.message });
         }
-        if (response.data.errors && response.data.errors.length > 0) {
-          setErrors(response.data.errors);
+        if (response.errors && response.errors.length > 0) {
+          setErrors(response.errors);
         }
       } else {
-        throw new Error(response.data || 'Failed to upload file');
+        throw new Error('Failed to upload file');
       }
     } catch (error) {
       console.error('Upload error:', error);
