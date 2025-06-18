@@ -26,12 +26,10 @@ class UserProfileSerializer(serializers.ModelSerializer):
     """
     class Meta:
         model = User
-        fields = ('id', 'email', 'username', 'wishlist', 'notifications')
+        fields = ('id', 'email', 'username', 'wishlist')
         read_only_fields = ('id',)
     
     wishlist = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
-    notifications = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
-
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
     """

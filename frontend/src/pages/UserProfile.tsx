@@ -98,42 +98,6 @@ export default function UserProfile() {
         </Box>
       </Paper>
 
-      <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h5" component="h2" gutterBottom>
-          Notifications
-        </Typography>
-        <Divider sx={{ mb: 2 }} />
-        {user.notifications.length > 0 ? (
-          <List>
-            {user.notifications.map((notification) => (
-              <ListItem 
-                key={notification.id} 
-                component={Link} 
-                to={`/books/${notification.book.id}`}
-                sx={{
-                  textDecoration: 'none',
-                  color: 'inherit',
-                  '&:hover': {
-                    backgroundColor: 'action.hover',
-                  },
-                }}
-              >
-                <ListItemText 
-                  primary={notification.message}
-                  primaryTypographyProps={{
-                    fontWeight: notification.notified ? 'normal' : 'bold'
-                  }}
-                />
-              </ListItem>
-            ))}
-          </List>
-        ) : (
-          <Typography variant="body1" color="text.secondary" sx={{ py: 2 }}>
-            You have no notifications.
-          </Typography>
-        )}
-      </Paper>
-
       <Paper elevation={3} sx={{ p: 3 }}>
         <Typography variant="h5" component="h2" gutterBottom>
           My Wishlist

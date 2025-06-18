@@ -108,7 +108,7 @@ def process_csv_task(self, file_path, user_email=None):
                     f"with {len(results['errors'])} errors in {processing_time:.2f} seconds"
                 )
                 
-                # Send email notification if email provided
+                # Send email if email provided
                 if user_email:
                     try:
                         send_processing_completion_email.delay(
@@ -119,7 +119,7 @@ def process_csv_task(self, file_path, user_email=None):
                             task_id
                         )
                     except Exception as email_error:
-                        logger.error(f"Failed to send email notification: {str(email_error)}")
+                        logger.error(f"Failed to send email: {str(email_error)}")
             except pd.errors.EmptyDataError:
                 error_msg = f"The file {file_path} is empty or not a valid CSV"
                 logger.error(error_msg)
@@ -140,7 +140,7 @@ def process_csv_task(self, file_path, user_email=None):
             logger.info(f"Retrying task in {retry_delay} seconds... (attempt {self.request.retries + 1}/{self.max_retries})")
             raise self.retry(exc=e, countdown=retry_delay)
         else:
-            # If we've exhausted retries, send a failure notification
+            # If we've exhausted retries, send a failure email
             if user_email:
                 try:
                     send_mail(
@@ -156,7 +156,7 @@ def process_csv_task(self, file_path, user_email=None):
 
 @shared_task
 def send_processing_completion_email(user_email, file_path, successes, errors, task_id):
-    """Send an email notification when CSV processing is complete."""
+    """Send an email when CSV processing is complete."""
     subject = 'CSV Processing Complete'
     error_count = len(errors)
     error_sample = {error['row']: error['errors'] for error in errors[:5]}

@@ -57,22 +57,11 @@ export interface BookReport {
     due_date: string,
 }
 
-export interface Notification {
-    id: number;
-    message: string;
-    user: User;
-    book: Book;
-    created_at: string;
-    notified: boolean;
-    notified_at: string;
-}
-
 export interface User {
   id: number;
   username: string;
   email: string;
   wishlist: Book[];
-  notifications: Notification[];
 }
 
 export interface UserWishlist {
